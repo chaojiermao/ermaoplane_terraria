@@ -1,0 +1,25 @@
+{
+  "name": "erpanel-terraria",
+  "version": "1.5.1",
+  "description": "ERPanel_terraria - 泰拉瑞亚服务器网页管理面板",
+  "main": "app/server.js",
+  "scripts": {
+    "start": "node app/server.js",
+    "build": "bash scripts/build.sh",
+    "install": "bash scripts/install.sh",
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "keywords": ["terraria", "server", "panel"],
+  "license": "MIT",
+  "dependencies": {
+    "adm-zip": "^0.5.18",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.11.1",
+    "express": "^5.2.1",
+    "fs-extra": "^11.3.6",
+    "jsonwebtoken": "^9.0.3",
+    "systeminformation": "^5.31.12",
+    "uuid": "^14.0.1",
+    "ws": "^8.21.0"
+  }
+}

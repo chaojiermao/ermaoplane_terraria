@@ -1,0 +1,9 @@
+# Terraria Server Configuration
+maxplayers=8
+port=7777
+autocreate=3
+difficulty=1
+worldname=像素领域
+secure=1
+language=zh-Hans
+npcstream=60

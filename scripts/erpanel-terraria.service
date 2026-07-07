@@ -1,0 +1,33 @@
+[Unit]
+Description=ERPanel_terraria - 泰拉瑞亚服务器管理面板
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=terraria
+Group=terraria
+WorkingDirectory=/opt/erpanel-terraria
+ExecStart=/usr/bin/node /opt/erpanel-terraria/app/server.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PORT=3001
+Environment=HOME=/opt/erpanel-terraria
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+
+# File system restrictions
+ReadWritePaths=/opt/erpanel-terraria /opt/erpanel-terraria/.local
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

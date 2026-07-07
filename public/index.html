@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ERPanel_terraria</title>
+<style>
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 8px rgba(255,121,35,.35)}50%{box-shadow:0 0 22px rgba(255,121,35,.65)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes breathe{0%,100%{box-shadow:0 0 0 2px rgba(110,224,90,.16),0 0 8px var(--green)}50%{box-shadow:0 0 0 4px rgba(110,224,90,.3),0 0 16px var(--green)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes starFloat{0%,100%{opacity:.5}50%{opacity:1}}
+:root{--sky-1:#143f73;--sky-2:#07172a;--night:#050912;--stone:#2d3640;--stone-2:#1a222a;--stone-3:#3e4b56;--wood:#5a321e;--wood-2:#2b1b13;--grass:#68be45;--grass-2:#3e8f37;--gold:#ffd45a;--gold-2:#a66a28;--green:#6ee05a;--green-2:#2f8a34;--red:#e35d4f;--blue:#49a7ff;--purple:#9a6bff;--cyan:#63d4ff;--text:#f8fbff;--muted:#b8c5d2;--dark:#0d1219;--panel:#161d25;--panel-2:#202a33;--line:rgba(255,255,255,.12);--shadow:rgba(0,0,0,.48);--radius:12px;}
+*{box-sizing:border-box}
+html{height:100%;background:#0a1628 url('bg.png') center/cover no-repeat fixed;}
+body{margin:0;min-height:100%;color:var(--text);font-family:"Microsoft YaHei","PingFang SC","SimHei",system-ui,sans-serif;overflow-x:hidden;
+  background:rgba(5,9,18,.35);}
+.stars{display:none}
+.page{position:relative;z-index:1;min-height:100vh;display:grid;grid-template-columns:230px minmax(860px,1fr);gap:14px;padding:14px;
+  animation:fadeIn .6s ease-out;}
+.pixel-frame{border:3px solid var(--stone-3);box-shadow:inset 0 0 0 2px rgba(0,0,0,.42),0 14px 26px var(--shadow);border-radius:var(--radius);position:relative;overflow:hidden;
+  background:rgba(22,29,37,.85);backdrop-filter:blur(12px);}
+.pixel-frame:before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.08),transparent 18%,transparent 82%,rgba(0,0,0,.25));mix-blend-mode:screen;opacity:.55;}
+.sidebar{height:calc(100vh - 28px);position:sticky;top:14px;
+  background:linear-gradient(180deg,rgba(39,49,58,.92),rgba(17,24,32,.95) 58%,rgba(11,16,22,.98));
+  backdrop-filter:blur(16px);padding:8px;border-radius:12px;display:flex;flex-direction:column;
+  animation:slideIn .5s ease-out;}
+.scene{height:72px;border-radius:8px;margin-bottom:8px;border:2px solid #53616d;position:relative;overflow:hidden;flex-shrink:0;
+  background:linear-gradient(180deg,#3a8ed7 0 50%,#1d4d7c 50% 100%);box-shadow:inset 0 -18px 0 rgba(0,0,0,.17);}
+.scene:before{content:"";position:absolute;left:18px;bottom:0;width:190px;height:24px;background:var(--grass);box-shadow:0 14px 0 #704526,0 28px 0 #4a3022;}
+.tree{position:absolute;left:44px;bottom:28px;width:18px;height:42px;background:#6d4226;box-shadow:20px 14px 0 #6d4226;}
+.tree:before{content:"";position:absolute;left:-20px;top:-24px;width:58px;height:36px;background:#4fb143;box-shadow:18px -18px 0 #61c64c,38px 0 0 #3f9639;}
+.slime{position:absolute;right:28px;bottom:28px;width:31px;height:23px;background:#72e05b;border:3px solid #2f7b2c;border-radius:16px 16px 9px 9px;box-shadow:inset -5px -5px 0 rgba(0,0,0,.12);
+  animation:float 3s ease-in-out infinite;}
+.slime:before{content:"";position:absolute;left:8px;top:7px;width:4px;height:4px;background:#123;border-radius:50%;box-shadow:11px 0 0 #123;}
+.nav{display:flex;flex-direction:column;gap:2px;flex:1;overflow-y:auto;}
+.nav-item{height:36px;display:flex;align-items:center;gap:7px;padding:0 9px;border-radius:7px;text-decoration:none;color:#edf5ff;background:rgba(255,255,255,.03);border:2px solid transparent;font-weight:700;font-size:12px;cursor:pointer;transition:.18s ease;flex-shrink:0;}
+.nav-item:hover,.nav-item.active{background:linear-gradient(180deg,#5f7d2d,#294e1f);border-color:#93c752;transform:translateX(4px);box-shadow:0 0 14px rgba(147,199,82,.22);}
+.nav-icon{width:20px;text-align:center;font-size:15px;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.45));flex-shrink:0;}
+.server-ip{padding:7px;background:rgba(17,24,32,.7);border:2px solid #43515d;border-radius:7px;flex-shrink:0;margin-top:4px;font-size:10px;backdrop-filter:blur(8px);}
+.server-ip .addr{font-size:11px;margin-top:3px;font-weight:900;color:#eafff4;}
+.main{min-width:0;display:flex;flex-direction:column;gap:10px;}
+.topbar{background:linear-gradient(180deg,rgba(112,66,35,.96),rgba(44,27,18,.98)),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 2px,transparent 2px 24px);display:flex;align-items:center;justify-content:space-between;padding:5px 12px;border-radius:12px;flex-shrink:0;
+  animation:fadeIn .6s ease-out;}
+.title{display:flex;align-items:center;gap:7px;color:var(--gold);font-weight:1000;font-size:20px;letter-spacing:2px;text-shadow:3px 3px 0 #2a160d;}
+.torch{width:24px;height:30px;display:grid;place-items:center;background:#2c1d13;border:2px solid #7d4e2d;border-radius:5px;box-shadow:0 0 18px rgba(255,121,35,.35);font-size:14px;
+  animation:pulseGlow 2s ease-in-out infinite;}
+.top-right{display:flex;align-items:center;gap:7px;}
+.pill{display:flex;align-items:center;gap:4px;padding:4px 9px;border:2px solid #67c857;border-radius:999px;background:rgba(34,100,36,.35);font-weight:900;font-size:11px;color:#eaffea;}
+.pill.offline{border-color:#e35d4f;background:rgba(100,34,34,.35);}
+.dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:breathe 2s ease-in-out infinite;}
+.pill.offline .dot{background:var(--red);animation:none;}
+.user{display:flex;align-items:center;gap:5px;padding:3px 6px;background:rgba(0,0,0,.24);border:2px solid rgba(255,255,255,.13);border-radius:7px;}
+.avatar{width:26px;height:26px;border-radius:5px;background:linear-gradient(180deg,#d8a06a 0 42%,#754a2b 42% 70%,#2b8f55 70%);border:2px solid #3c2a1d;}
+.user strong{display:block;font-size:10px}.user span{display:block;font-size:8px;color:var(--muted)}
+.icon-btn{width:28px;height:28px;display:grid;place-items:center;background:#1a222a;border:2px solid #53616d;border-radius:6px;cursor:pointer;font-size:13px;transition:.15s;}
+.icon-btn:hover{background:#2a3640;border-color:var(--blue);transform:scale(1.08);}
+.section{display:none}.section.active{display:block;animation:fadeIn .35s ease-out;}
+.card{background:rgba(22,29,37,.6);backdrop-filter:blur(8px);border-radius:10px;padding:10px;
+  border:1px solid rgba(255,255,255,.06);transition:.2s;}
+.card:hover{border-color:rgba(255,255,255,.12);box-shadow:0 4px 16px rgba(0,0,0,.3);}
+.card-title{display:flex;align-items:center;font-weight:1000;color:#fff;font-size:13px;margin-bottom:8px;}
+.kv{display:grid;gap:3px;font-size:12px}
+.kv-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.07);}
+.kv-row .k{color:var(--muted)}.kv-row .v{color:#fff;font-weight:700;text-align:right}
+.kv-row .v.green{color:var(--green)}.kv-row .v.gold{color:var(--gold)}.kv-row .v.red{color:var(--red)}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.big-btn{height:42px;border:3px solid rgba(255,255,255,.22);border-radius:9px;color:#fff;font-size:14px;font-weight:1000;cursor:pointer;text-shadow:2px 2px 0 rgba(0,0,0,.35);box-shadow:inset 0 -4px 0 rgba(0,0,0,.24),0 6px 12px rgba(0,0,0,.28);transition:.15s ease;position:relative;overflow:hidden;}
+.big-btn:hover{transform:translateY(-3px);filter:brightness(1.1);box-shadow:inset 0 -4px 0 rgba(0,0,0,.24),0 10px 20px rgba(0,0,0,.35);}
+.big-btn:active{transform:translateY(1px)}.big-btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+.big-btn::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);background-size:200% 100%;transform:skewX(-20deg);pointer-events:none;}
+.big-btn:hover::after{animation:shimmer 1.2s ease-in-out infinite;}
+.start{background:linear-gradient(180deg,#7feb5d,#2d8b34)}.stop{background:linear-gradient(180deg,#ff7a68,#bc3a35)}.restart{background:linear-gradient(180deg,#65bbff,#1f68bd)}.save{background:linear-gradient(180deg,#ffd866,#b06a20)}
+.res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.res-card{padding:12px;background:rgba(0,0,0,.22);border:2px solid rgba(255,255,255,.1);border-radius:10px;transition:.2s;}
+.res-card:hover{border-color:rgba(255,255,255,.2);transform:translateY(-2px);}
+.res-card .rname{font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.res-card .rval{font-size:20px;font-weight:1000;margin-bottom:4px}
+.res-card .rbar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.res-card .rbar i{display:block;height:100%;border-radius:3px;transition:width .6s}
+.rbar-cpu i{background:linear-gradient(90deg,var(--green),#b1ff69);background-size:200% 100%;animation:shimmer 3s linear infinite;}
+.rbar-ram i{background:linear-gradient(90deg,var(--blue),var(--cyan))}
+.rbar-disk i{background:linear-gradient(90deg,var(--purple),#caa0ff)}
+.mode-options{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mode-btn{height:56px;border:3px solid rgba(255,255,255,.13);border-radius:9px;background:#121820;color:#fff;display:grid;place-items:center;font-weight:1000;cursor:pointer;box-shadow:inset 0 -4px 0 rgba(0,0,0,.22);transition:.18s;}
+.mode-btn:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.25);}
+.mode-btn span{font-size:17px}.mode-btn small{font-size:10px;color:var(--muted);margin-top:1px}
+.mode-btn.active{border-color:#bda6ff;background:linear-gradient(180deg,#8d62ff,#532dc2);box-shadow:0 0 20px rgba(154,107,255,.35);}
+.hint-box{margin-top:6px;font-size:11px;color:#d7e4ef;line-height:1.5;background:rgba(0,0,0,.18);border-left:3px solid var(--purple);padding:6px 8px;border-radius:5px}
+.hint-box .warn{color:var(--red)}
+.ver-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin:6px 0}
+.ver-card{padding:8px;border:2px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(0,0,0,.13);text-align:center;transition:.2s;}
+.ver-card:hover{border-color:rgba(255,255,255,.2);transform:translateY(-2px);}
+.ver-card span{font-size:10px;color:var(--muted);display:block}.ver-card strong{display:block;font-size:14px;color:var(--green);margin-top:2px}
+.ver-card .vtype{font-size:10px;color:var(--purple);margin-top:1px}
+.wide-btn{width:100%;height:38px;border:3px solid rgba(255,255,255,.18);border-radius:8px;color:white;font-size:13px;font-weight:1000;cursor:pointer;box-shadow:inset 0 -4px 0 rgba(0,0,0,.23);transition:.15s;}
+.wide-btn:hover{transform:translateY(-2px);filter:brightness(1.08);}
+.wide-btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+.btn-green{background:linear-gradient(180deg,#83e965,#298a31)}.btn-red{background:linear-gradient(180deg,#ff7a68,#bc3a35)}.btn-blue{background:linear-gradient(180deg,#65bbff,#1f68bd)}.btn-purple{background:linear-gradient(180deg,#8f6aff,#5e36c8)}.btn-gold{background:linear-gradient(180deg,#ffd866,#b06a20)}.btn-dark{background:linear-gradient(180deg,#313942,#171c22);border-color:#53616d}
+.tool-btn{height:26px;padding:0 7px;border:2px solid #53616d;border-radius:6px;background:#111820;color:#eaf2ff;font-weight:900;font-size:11px;cursor:pointer;transition:.15s;}
+.tool-btn:hover{background:#1a2630;border-color:var(--blue);}
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{text-align:left;padding:5px;border-bottom:2px solid rgba(255,255,255,.12);color:var(--muted);font-weight:800;font-size:11px}
+.data-table td{padding:5px;border-bottom:1px solid rgba(255,255,255,.06)}
+.data-table tr:hover td{background:rgba(255,255,255,.05)}
+.data-table .empty td{text-align:center;color:var(--muted);padding:18px}
+.badge{padding:1px 6px;border-radius:999px;font-size:10px;font-weight:800}
+.badge-green{background:rgba(110,224,90,.18);color:#7df07a;border:1px solid rgba(110,224,90,.3)}
+.badge-red{background:rgba(227,93,79,.18);color:#ff7a68;border:1px solid rgba(227,93,79,.3)}
+.filter-bar{display:flex;gap:6px;margin-bottom:8px;align-items:center}
+.filter-bar input,.filter-bar select{height:28px;padding:0 7px;border:2px solid #53616d;border-radius:6px;background:#111820;color:#fff;font-size:12px;outline:none;transition:.15s;}
+.filter-bar input:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(73,167,255,.2);}
+.toast{position:fixed;right:22px;bottom:22px;z-index:10;padding:10px 14px;background:#111820;border:3px solid #53616d;border-radius:10px;box-shadow:0 14px 26px rgba(0,0,0,.42);font-weight:900;font-size:12px;transform:translateY(20px);opacity:0;transition:.3s cubic-bezier(.34,1.56,.64,1)}
+.toast.show{transform:translateY(0);opacity:1}
+.overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+  background:rgba(5,9,18,.85);backdrop-filter:blur(6px);}
+.overlay.hidden{display:none}
+.login-box{width:330px;padding:26px 20px 20px;background:linear-gradient(180deg,#1a2630,#0d141c);border:3px solid #53616d;border-radius:14px;box-shadow:inset 0 0 0 2px rgba(0,0,0,.35),0 20px 40px rgba(0,0,0,.5);
+  animation:fadeIn .5s ease-out;}
+.login-box h2{text-align:center;color:var(--gold);font-size:22px;margin:0 0 3px;text-shadow:3px 3px 0 #1a1008}
+.login-box p{text-align:center;color:var(--muted);font-size:12px;margin:0 0 16px}
+.login-box label{display:block;font-size:11px;color:var(--muted);margin-bottom:2px;font-weight:800}
+.login-box input{width:100%;height:34px;padding:0 8px;border:2px solid #53616d;border-radius:7px;background:#111820;color:#fff;font-size:13px;margin-bottom:10px;outline:none;transition:.15s;}
+.login-box input:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(73,167,255,.2);}
+.login-btn{width:100%;height:38px;border:3px solid rgba(255,255,255,.2);border-radius:8px;background:linear-gradient(180deg,#7feb5d,#2d8b34);color:#fff;font-size:14px;font-weight:1000;cursor:pointer;transition:.15s;}
+.login-btn:hover{filter:brightness(1.08);transform:translateY(-2px);}
+.login-btn:disabled{opacity:.5}
+.login-error{color:var(--red);font-size:11px;text-align:center;margin-top:5px;display:none}.login-error.show{display:block}
+.modal-overlay{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.72)}
+.modal-overlay.show{display:flex}
+.modal-box{width:420px;max-width:90vw;background:linear-gradient(180deg,#1a2630,#0d141c);border:3px solid #53616d;border-radius:14px;padding:22px;box-shadow:0 20px 40px rgba(0,0,0,.6);max-height:85vh;overflow-y:auto;
+  animation:fadeIn .25s ease-out;}
+.modal-box h3{margin:0 0 6px;color:var(--gold);font-size:17px}
+.modal-box .mbody{font-size:12px;color:#d0dce8;line-height:1.7;margin-bottom:14px}
+.modal-box .mbody .warn{color:var(--red);font-weight:800}
+.modal-box .mbody strong{color:#fff}
+.modal-actions{display:flex;gap:6px;justify-content:flex-end}
+.modal-actions button{height:34px;padding:0 16px;border-radius:7px;font-weight:900;font-size:12px;cursor:pointer;border:2px solid rgba(255,255,255,.18);transition:.15s;}
+.modal-actions button:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.mbtn-cancel{background:#1a222a;color:var(--muted)}.mbtn-confirm{background:linear-gradient(180deg,#ff7a68,#bc3a35);color:#fff}
+/* Progress modal */
+.progress-modal .pbar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin-top:8px}
+.progress-modal .pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--blue));width:0;transition:width .4s;
+  background-size:200% 100%;animation:shimmer 2s linear infinite;}
+.summary-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.summary-row .ver-card:last-child{border-color:rgba(154,107,255,.35)}
+@media(max-width:1200px){.page{grid-template-columns:64px minmax(640px,1fr)}.scene,.server-ip,.nav-item .nav-label{display:none}.nav-item{justify-content:center;padding:0}.res-grid{grid-template-columns:1fr 1fr 1fr}}
+@media(max-width:860px){body{overflow-x:auto}.page{min-width:900px}}
+
+
+/* ===== ERPanel visual polish 2026-07-06 ===== */
+:root{--glass:rgba(14,22,34,.74);--glass-2:rgba(20,31,47,.82);--line-strong:rgba(168,202,255,.22);--soft-blue:rgba(83,168,255,.18);--soft-purple:rgba(154,107,255,.22);--danger:#ff756a;--ok:#7fff6a;--panel-radius:18px;--ease:cubic-bezier(.22,1,.36,1)}
+@keyframes panelRise{from{opacity:0;transform:translateY(18px) scale(.985);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+@keyframes aurora{0%{transform:translate3d(-3%,-2%,0) scale(1)}50%{transform:translate3d(4%,2%,0) scale(1.04)}100%{transform:translate3d(-3%,-2%,0) scale(1)}}
+@keyframes drift{from{background-position:0 0,0 0,0 0}to{background-position:260px -140px,-180px 220px,120px 80px}}
+@keyframes borderFlow{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+@keyframes iconBob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-6px) rotate(1deg)}}
+html{background-color:#071325;background-image:linear-gradient(180deg,rgba(4,10,20,.18),rgba(3,7,13,.58)),url('bg.png');}
+body{font-size:14px;line-height:1.55;background:radial-gradient(circle at 45% 10%,rgba(72,146,255,.22),transparent 34%),linear-gradient(180deg,rgba(5,9,18,.14),rgba(5,9,18,.52));}
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(circle at 18% 8%,rgba(115,209,255,.18),transparent 25%),radial-gradient(circle at 78% 18%,rgba(154,107,255,.16),transparent 28%),linear-gradient(180deg,transparent 0 56%,rgba(1,5,13,.36));mix-blend-mode:screen;animation:aurora 10s var(--ease) infinite;}
+body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.75;background:radial-gradient(circle,#fff 0 1px,transparent 1.6px),radial-gradient(circle,#8fd6ff 0 1px,transparent 1.7px),radial-gradient(circle,#ffeaa0 0 1px,transparent 1.5px);background-size:130px 90px,190px 130px,260px 180px;background-position:0 0,40px 60px,80px 30px;animation:drift 44s linear infinite;}
+.page{grid-template-columns:260px minmax(0,1fr);gap:18px;padding:18px;max-width:1680px;margin:0 auto;}
+.pixel-frame{border:1px solid rgba(182,213,255,.22);box-shadow:0 24px 60px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.45);background:linear-gradient(180deg,rgba(31,43,60,.78),rgba(10,16,26,.86));border-radius:var(--panel-radius);}
+.pixel-frame::before{background:linear-gradient(135deg,rgba(255,255,255,.13),transparent 22%,transparent 76%,rgba(73,167,255,.10));opacity:.72;}
+.sidebar{padding:12px;border-radius:20px;background:linear-gradient(180deg,rgba(30,43,61,.86),rgba(8,13,22,.92));}
+.scene{height:104px;border-radius:16px;border-color:rgba(168,202,255,.24);box-shadow:inset 0 -24px 0 rgba(0,0,0,.22),0 12px 34px rgba(0,0,0,.24)}
+.nav{gap:7px;padding-right:2px}.nav::-webkit-scrollbar,.config-file-list::-webkit-scrollbar,.config-form::-webkit-scrollbar,#modConfigRaw::-webkit-scrollbar,.raw-panel::-webkit-scrollbar,.visual-panel::-webkit-scrollbar{width:8px;height:8px}.nav::-webkit-scrollbar-thumb,.config-file-list::-webkit-scrollbar-thumb,.config-form::-webkit-scrollbar-thumb,#modConfigRaw::-webkit-scrollbar-thumb,.raw-panel::-webkit-scrollbar-thumb,.visual-panel::-webkit-scrollbar-thumb{background:rgba(134,174,230,.28);border-radius:999px}.nav::-webkit-scrollbar-track,.config-file-list::-webkit-scrollbar-track,.config-form::-webkit-scrollbar-track,#modConfigRaw::-webkit-scrollbar-track,.raw-panel::-webkit-scrollbar-track,.visual-panel::-webkit-scrollbar-track{background:rgba(255,255,255,.04)}
+.nav-item{height:44px;border-radius:12px;font-size:14px;font-weight:850;letter-spacing:.2px;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018));border:1px solid rgba(255,255,255,.06);}
+.nav-item:hover,.nav-item.active{background:linear-gradient(135deg,rgba(117,213,83,.30),rgba(74,126,49,.54));border-color:rgba(147,235,104,.52);transform:translateX(6px);box-shadow:0 12px 28px rgba(42,142,67,.23),inset 0 1px 0 rgba(255,255,255,.12);}
+.nav-icon{font-size:18px;width:24px}.server-ip{font-size:12px;border-radius:14px;padding:11px;background:rgba(7,14,23,.52);border-color:rgba(168,202,255,.18)}.server-ip .addr{font-size:14px}
+.main{gap:14px}.topbar{min-height:70px;padding:10px 18px;border-radius:20px;background:linear-gradient(135deg,rgba(95,54,28,.78),rgba(25,18,18,.88)),linear-gradient(90deg,rgba(255,212,90,.14),transparent 48%,rgba(99,212,255,.12));overflow:hidden}.topbar::after{content:"";position:absolute;right:120px;top:-72px;width:260px;height:150px;background:url('assets/ui-ornament.svg') center/contain no-repeat;opacity:.28;filter:drop-shadow(0 14px 30px rgba(0,0,0,.35));pointer-events:none}.title{font-size:24px;letter-spacing:1px}.torch{width:34px;height:42px;border-radius:10px;font-size:19px}.pill{font-size:13px;padding:7px 12px}.user{padding:6px 9px;border-radius:12px}.user strong{font-size:13px}.user span{font-size:11px}.avatar{width:34px;height:34px;border-radius:10px}.icon-btn{width:38px;height:38px;border-radius:11px;font-size:16px}
+.section.active{animation:panelRise .46s var(--ease)}.card{padding:16px;border-radius:18px;background:linear-gradient(180deg,rgba(18,29,43,.72),rgba(9,14,24,.72));border:1px solid rgba(168,202,255,.14)}.card-title{font-size:16px;margin-bottom:12px}.kv{font-size:14px}.kv-row{padding:7px 0}.actions{gap:12px}.big-btn{height:56px;border-radius:15px;font-size:16px}.wide-btn{height:44px;border-radius:13px;font-size:14px}.tool-btn{height:34px;padding:0 12px;border-radius:10px;font-size:13px;border:1px solid rgba(168,202,255,.22);background:linear-gradient(180deg,rgba(26,39,56,.95),rgba(12,18,28,.95));box-shadow:inset 0 1px 0 rgba(255,255,255,.06);}.tool-btn:hover{transform:translateY(-1px);border-color:rgba(99,212,255,.55);box-shadow:0 10px 22px rgba(0,0,0,.22)}.tool-btn.primary{background:linear-gradient(180deg,#7feb5d,#2d8b34);border-color:rgba(170,255,152,.45);color:white}.data-table{font-size:14px}.data-table th{font-size:12px;text-transform:uppercase;letter-spacing:.5px;padding:10px 9px}.data-table td{padding:11px 9px}.filter-bar input,.filter-bar select,input,select,textarea{font-family:inherit}.filter-bar input,.filter-bar select{height:38px;border-radius:11px;font-size:14px;background:rgba(7,14,23,.72);border:1px solid rgba(168,202,255,.22)}
+.res-card{border-radius:16px;padding:16px}.res-card .rname{font-size:13px}.res-card .rval{font-size:25px}.res-card .rbar{height:9px;border-radius:999px}.toast{font-size:14px;border-radius:14px;border:1px solid rgba(168,202,255,.28);background:rgba(11,18,28,.94);backdrop-filter:blur(14px)}
+.page-card{position:relative;overflow:hidden}.page-card::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(120deg,rgba(99,212,255,.06),transparent 28%,transparent 72%,rgba(154,107,255,.08));}
+.page-head{position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:18px;padding:6px 4px 4px}.page-head h2{margin:2px 0 4px;font-size:26px;line-height:1.15;color:#fff;letter-spacing:.2px}.page-head p{margin:0;max-width:850px;color:#c8d7e8;font-size:14px}.eyebrow{font-size:11px;font-weight:900;letter-spacing:1.7px;color:#7ee7ff;text-transform:uppercase}.compact-head{margin-bottom:14px}.mode-current-chip{flex-shrink:0;border:1px solid rgba(126,231,255,.28);background:rgba(7,14,23,.48);border-radius:999px;padding:9px 14px;color:#dff4ff;font-size:13px;font-weight:800}.mode-select-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:16px}.mode-card.mode-btn{height:auto;min-height:244px;display:block;text-align:left;padding:20px;border-radius:20px;border:1px solid rgba(168,202,255,.22);background:linear-gradient(155deg,rgba(23,58,45,.70),rgba(9,15,25,.86));box-shadow:0 18px 44px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.08);overflow:hidden;position:relative;color:#fff;}.mode-card.mode-btn:nth-child(2){background:linear-gradient(155deg,rgba(61,48,103,.76),rgba(9,15,25,.88));}.mode-card.mode-btn:hover{transform:translateY(-5px);border-color:rgba(126,231,255,.45);box-shadow:0 24px 60px rgba(0,0,0,.38),0 0 0 1px rgba(126,231,255,.12) inset}.mode-card.mode-btn.active{border-color:rgba(255,212,90,.72);background-size:200% 200%;box-shadow:0 0 0 1px rgba(255,212,90,.28) inset,0 24px 60px rgba(0,0,0,.40),0 0 34px rgba(255,212,90,.16)}.mode-card.mode-btn.active::after{content:"已选择";position:absolute;right:16px;top:16px;font-size:12px;font-weight:900;color:#1d1808;background:linear-gradient(180deg,#ffe68a,#ffd45a);border-radius:999px;padding:5px 10px;box-shadow:0 8px 20px rgba(255,212,90,.18)}.mode-glow{position:absolute;right:-80px;bottom:-80px;width:210px;height:210px;border-radius:999px;background:radial-gradient(circle,rgba(126,231,255,.23),transparent 64%);transition:.35s var(--ease)}.mode-card:hover .mode-glow{transform:scale(1.25);opacity:1}.mode-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.mode-icon{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;font-size:30px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.10);animation:iconBob 4s ease-in-out infinite}.mode-badge{font-size:12px;font-weight:900;color:#cfffd2;border:1px solid rgba(126,255,135,.35);background:rgba(72,168,78,.18);border-radius:999px;padding:6px 10px}.mode-badge.purple{color:#e4d9ff;border-color:rgba(189,166,255,.42);background:rgba(154,107,255,.18)}.mode-card strong{display:block;font-size:23px;line-height:1.1;margin-bottom:8px;color:#fff}.mode-card p{font-size:14px;line-height:1.65;color:#cfdbeb;margin:0 0 12px}.mode-card ul{margin:0;padding:0;display:grid;gap:7px}.mode-card li{list-style:none;position:relative;padding-left:20px;font-size:13px;color:#b8c9da}.mode-card li::before{content:"";position:absolute;left:1px;top:.64em;width:7px;height:7px;background:#7fff6a;box-shadow:0 0 10px rgba(127,255,106,.42);transform:rotate(45deg)}.mode-flow{position:relative;z-index:1;margin:16px 0 12px;display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr 28px 1fr;gap:8px;align-items:center}.mode-flow div{min-height:58px;border:1px solid rgba(168,202,255,.17);background:rgba(7,14,23,.42);border-radius:16px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:900;color:#eaf6ff}.mode-flow span{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(180deg,#65bbff,#1f68bd);font-size:13px}.mode-flow i{height:2px;background:linear-gradient(90deg,transparent,#7ee7ff,transparent);position:relative}.mode-flow i::after{content:"";position:absolute;right:-2px;top:-4px;border-left:7px solid #7ee7ff;border-top:5px solid transparent;border-bottom:5px solid transparent}.mode-actions{position:relative;z-index:1;display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}.mode-actions #modeSwitchCleanBtn{width:auto;min-width:180px;padding:0 22px}.mode-actions #modeStatus{color:#c8d7e8;font-size:14px;font-weight:800}.mode-hint{font-size:13px;padding:11px 14px;border-radius:12px}
+.notice{position:relative;z-index:1;padding:12px 14px;border-radius:14px;margin-bottom:12px;font-size:14px;font-weight:850}.notice.danger{background:rgba(227,93,79,.12);border:1px solid rgba(227,93,79,.34);color:#ffd3d0}.mod-toolbar{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.seg-tabs{display:flex;gap:8px;padding:5px;border-radius:14px;background:rgba(7,14,23,.46);border:1px solid rgba(168,202,255,.13)}.mod-tab.active{background:linear-gradient(180deg,#8f6aff,#5e36c8);border-color:rgba(189,166,255,.52);box-shadow:0 12px 28px rgba(94,54,200,.26)}.mod-filter{margin-bottom:12px}.table-wrap{position:relative;z-index:1;overflow:auto;border-radius:15px;border:1px solid rgba(168,202,255,.13);background:rgba(7,14,23,.28)}.table-wrap .data-table th{background:rgba(255,255,255,.045)}.mod-config-pane{position:relative;z-index:1}.config-layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;min-height:640px}.config-sidebar,.config-editor{border:1px solid rgba(168,202,255,.16);background:linear-gradient(180deg,rgba(11,18,28,.66),rgba(7,11,18,.58));border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.055)}.config-sidebar{padding:12px;display:flex;flex-direction:column;min-width:0}.config-sidebar-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.config-sidebar-head span{display:block;font-size:16px;font-weight:1000;color:#fff}.config-sidebar-head small{display:block;font-size:12px;color:#9fb3c8}.config-file-list{display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:560px;padding-right:4px}.muted-empty{color:#9fb3c8;font-size:14px;padding:12px;border:1px dashed rgba(168,202,255,.18);border-radius:12px;text-align:center}.config-file-btn{width:100%;text-align:left;white-space:normal;border:1px solid rgba(168,202,255,.14);border-radius:14px;padding:12px;background:linear-gradient(180deg,rgba(26,39,56,.68),rgba(9,15,24,.72));color:#eaf6ff;cursor:pointer;transition:.18s var(--ease)}.config-file-btn:hover,.config-file-btn.active{transform:translateY(-2px);border-color:rgba(126,231,255,.42);box-shadow:0 14px 28px rgba(0,0,0,.24)}.config-file-btn strong{display:block;font-size:14px;line-height:1.35;word-break:break-all}.config-file-btn small{display:flex;gap:7px;align-items:center;margin-top:7px;font-size:12px;color:#9fb3c8}.json-ok,.json-bad{display:inline-flex;align-items:center;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:900}.json-ok{background:rgba(110,224,90,.14);color:#8dff85}.json-bad{background:rgba(227,93,79,.14);color:#ff8b80}.config-editor{padding:12px;min-width:0;display:flex;flex-direction:column}.config-editor-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:12px}.config-title-wrap{min-width:0}.config-title-label{display:block;font-size:11px;font-weight:900;letter-spacing:1.4px;color:#7ee7ff}.config-title-wrap #modConfigTitle{display:block;max-width:620px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:18px;font-weight:1000;color:var(--gold)}.config-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.config-actions select,#modConfigBackupSelect{height:34px;max-width:250px;border-radius:10px;background:rgba(7,14,23,.78);border:1px solid rgba(168,202,255,.22);color:#eaf6ff;padding:0 10px;font-size:13px}.config-panels{display:grid;grid-template-columns:minmax(320px,.9fr) minmax(360px,1.1fr);gap:12px;min-height:0;flex:1}.config-panel{min-width:0;border:1px solid rgba(168,202,255,.14);border-radius:16px;background:rgba(4,9,16,.38);overflow:hidden;display:flex;flex-direction:column}.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid rgba(168,202,255,.12);background:rgba(255,255,255,.035)}.panel-head strong{font-size:15px;color:#fff}.panel-head span{font-size:12px;color:#9fb3c8}.config-form{padding:12px;overflow:auto;max-height:600px}.raw-panel textarea,#modConfigRaw{flex:1;width:100%;min-height:600px;resize:vertical;border:0;outline:none;background:#07101c;color:#dff0ff;font-family:"JetBrains Mono","Cascadia Code",Consolas,monospace;font-size:13px;line-height:1.62;padding:14px;tab-size:2}.config-group{display:flex;flex-direction:column;gap:9px}.config-row,.config-object,.config-array{border:1px solid rgba(168,202,255,.12);border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));padding:10px}.config-row{display:grid;grid-template-columns:minmax(120px,210px) minmax(0,1fr);gap:12px;align-items:center}.config-label strong{display:block;font-size:13px;color:#edf6ff;line-height:1.3;word-break:break-all}.config-label span{display:block;font-size:11px;color:#8fa4ba;margin-top:3px;word-break:break-all}.config-input,.config-textarea{width:100%;border-radius:11px;background:rgba(7,14,23,.78);border:1px solid rgba(168,202,255,.22);color:#fff;padding:0 11px;font-size:14px;outline:none;transition:.16s}.config-input{height:38px}.config-textarea{min-height:110px;padding:10px;font-family:"JetBrains Mono",Consolas,monospace;line-height:1.55}.config-input:focus,.config-textarea:focus,#modConfigRaw:focus{border-color:rgba(126,231,255,.6);box-shadow:0 0 0 3px rgba(126,231,255,.12)}.config-object{padding:0;overflow:hidden}.config-object>summary,.config-array>summary{cursor:pointer;padding:11px 12px;font-weight:1000;color:#fff;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px}.config-object>summary::-webkit-details-marker,.config-array>summary::-webkit-details-marker{display:none}.config-object>summary::after,.config-array>summary::after{content:"展开";font-size:11px;color:#9fb3c8;border:1px solid rgba(168,202,255,.18);border-radius:999px;padding:2px 8px}.config-object[open]>summary::after,.config-array[open]>summary::after{content:"收起"}.config-object-body,.config-array-body{border-top:1px solid rgba(168,202,255,.10);padding:10px}.config-bool{display:flex;align-items:center;gap:10px}.config-bool input{width:18px;height:18px;accent-color:#7fff6a}.config-bool span{font-size:13px;color:#c8d7e8}.config-hint{font-size:13px;margin-top:12px}.empty-config{font-size:13px;color:#9fb3c8;border:1px dashed rgba(168,202,255,.16);border-radius:12px;padding:12px;text-align:center}.badge{font-size:12px;padding:4px 9px}.login-box{width:380px;border-radius:20px}.login-box h2{font-size:26px}.login-box p,.login-box label{font-size:13px}.login-box input{height:42px;font-size:14px;border-radius:12px}.login-btn{height:46px;border-radius:13px;font-size:15px}.modal-box{width:min(520px,92vw);border-radius:20px}.modal-box h3{font-size:20px}.modal-box .mbody{font-size:14px}.modal-actions button{height:40px;font-size:14px;border-radius:12px}
+@media(max-width:1280px){.page{grid-template-columns:82px minmax(760px,1fr)}.scene,.server-ip,.nav-item .nav-label{display:none}.nav-item{justify-content:center;height:48px;padding:0}.nav-icon{width:auto}.config-layout{grid-template-columns:280px minmax(0,1fr)}.config-panels{grid-template-columns:1fr}.raw-panel textarea,#modConfigRaw{min-height:420px}.mode-flow{grid-template-columns:1fr 1fr;}.mode-flow i{display:none}}
+@media(max-width:980px){body{overflow-x:auto}.page{min-width:980px}.mode-select-grid{grid-template-columns:1fr}.config-layout{grid-template-columns:1fr}.config-file-list{max-height:260px}.config-editor-head{flex-direction:column}.config-actions{justify-content:flex-start}.page-head{flex-direction:column}.mode-current-chip{align-self:flex-start}}
+
+
+/* ===== Sidebar logo replacement ===== */
+.logo-scene{
+  height:122px;
+  padding:4px;
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(8,18,34,.82),rgba(4,9,18,.92));
+  border:1px solid rgba(255,212,90,.28);
+  box-shadow:0 16px 36px rgba(0,0,0,.34),0 0 24px rgba(255,212,90,.10),inset 0 1px 0 rgba(255,255,255,.10);
+  isolation:isolate;
+}
+.logo-scene::before{display:none!important;content:none!important;}
+.logo-scene::after{
+  content:"";
+  position:absolute;
+  inset:-45% -30%;
+  z-index:2;
+  pointer-events:none;
+  background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.16) 47%,transparent 56%);
+  transform:translateX(-78%) rotate(2deg);
+  animation:logoSweep 5.8s ease-in-out infinite;
+}
+.sidebar-logo-img{
+  position:relative;
+  z-index:1;
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+  border-radius:14px;
+  filter:drop-shadow(0 8px 18px rgba(0,0,0,.40));
+  transform:translateZ(0);
+}
+.logo-scene:hover .sidebar-logo-img{
+  filter:drop-shadow(0 10px 24px rgba(0,0,0,.48)) saturate(1.06) brightness(1.04);
+}
+@keyframes logoSweep{
+  0%,62%{transform:translateX(-78%) rotate(2deg);opacity:0;}
+  72%{opacity:.75;}
+  100%{transform:translateX(78%) rotate(2deg);opacity:0;}
+}
+
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="overlay" id="loginOverlay">
+<div class="login-box"><h2>🔥 泰拉面板</h2><p id="loginSubtitle">正在连接...</p>
+<label>用户名</label><input type="text" id="loginUser" placeholder="用户名"/>
+<label>密码</label><input type="password" id="loginPass" placeholder="密码"/>
+<button class="login-btn" id="loginBtn">登录</button>
+<div class="login-error" id="loginError"></div></div></div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal">
+<div class="modal-box"><h3 id="modalTitle">⚠️ 确认</h3><div class="mbody" id="modalBody"></div>
+<div class="modal-actions"><button class="mbtn-cancel" id="modalCancel">取消</button><button class="mbtn-confirm" id="modalConfirm">确认执行</button></div></div></div>
+
+<!-- Progress Modal -->
+<div class="modal-overlay" id="progressModal">
+<div class="modal-box progress-modal"><h3 id="progressTitle">⏳ 操作中</h3><div class="mbody" id="progressBody"><p>请稍候...</p></div>
+<div class="pbar"><i id="progressBarFill"></i></div></div></div>
+
+<main class="page" id="mainApp">
+<aside class="sidebar pixel-frame">
+<div class="scene logo-scene"><img src="assets/erpanel-logo.png" alt="ERpanel 超级猫面板系统" class="sidebar-logo-img"/></div>
+<nav class="nav" id="mainNav">
+<a class="nav-item active" data-section="dashboard"><span class="nav-icon">🏠</span><span class="nav-label">总览</span></a>
+<a class="nav-item" data-section="server"><span class="nav-icon">⚔️</span><span class="nav-label">服务器</span></a>
+<a class="nav-item" data-section="mode"><span class="nav-icon">🔁</span><span class="nav-label">模式</span></a>
+<a class="nav-item" data-section="version"><span class="nav-icon">⬆️</span><span class="nav-label">版本更新</span></a>
+<a class="nav-item" data-section="players"><span class="nav-icon">🧙</span><span class="nav-label">玩家</span></a>
+<a class="nav-item" data-section="mods"><span class="nav-icon">⚙️</span><span class="nav-label">模组</span></a>
+<a class="nav-item" data-section="backups"><span class="nav-icon">🧰</span><span class="nav-label">备份</span></a>
+<a class="nav-item" data-section="logs"><span class="nav-icon">📜</span><span class="nav-label">日志</span></a>
+<a class="nav-item" data-section="files"><span class="nav-icon">📁</span><span class="nav-label">文件</span></a>
+<a class="nav-item" data-section="settings"><span class="nav-icon">🔧</span><span class="nav-label">设置</span></a>
+</nav>
+<div class="server-ip"><span>🎮 当前类型</span><div class="addr" id="srvModeDisplay">-</div><span style="font-size:9px;margin-top:3px;color:var(--muted)">状态: <span id="srvStatusBottom">-</span></span></div>
+</aside>
+
+<section class="main">
+<header class="topbar pixel-frame">
+<div class="title"><span class="torch">🔥</span>泰拉服务器面板</div>
+<div class="top-right">
+<div class="pill" id="statusPill"><i class="dot"></i><span id="statusText">离线</span></div>
+<div class="user"><div class="avatar"></div><div><strong id="userName">-</strong><span id="userRole">-</span></div></div>
+<div class="icon-btn" id="logoutBtn">🚪</div>
+</div>
+</header>
+
+<!-- ===== 总览 ===== -->
+<div class="section active" id="sec-dashboard">
+<div class="actions">
+<button class="big-btn start" id="btnStart">▶ 启动</button>
+<button class="big-btn stop" id="btnStop">■ 停止</button>
+<button class="big-btn restart" id="btnRestart">↻ 重启</button>
+<button class="big-btn save" id="btnSave">💾 保存</button>
+</div>
+
+<!-- 服务器信息 -->
+<section class="card pixel-frame" style="margin-top:10px">
+<div class="card-title">⚔️ 服务器信息</div>
+<div class="kv">
+<div class="kv-row"><span class="k">状态</span><span class="v green" id="dashStatus">-</span></div>
+<div class="kv-row"><span class="k">运行模式</span><span class="v" id="dashMode">-</span></div>
+<div class="kv-row"><span class="k">在线人数</span><span class="v" id="dashPlayers">0</span></div>
+<div class="kv-row"><span class="k">进程 PID</span><span class="v" id="dashPid">-</span></div>
+<div class="kv-row"><span class="k">游戏端口</span><span class="v" id="dashPort">-</span></div>
+</div>
+</section>
+
+<!-- 系统资源可视化 -->
+<section class="pixel-frame card" style="margin-top:8px">
+<div class="card-title">💻 系统资源</div>
+<div class="res-grid" id="resGrid">
+<div class="res-card"><div class="rname">🔵 CPU</div><div class="rval" id="resCpu">-</div><div class="rbar rbar-cpu"><i id="resCpuBar" style="width:0%"></i></div></div>
+<div class="res-card"><div class="rname">🟢 内存</div><div class="rval" id="resRam">-</div><div class="rbar rbar-ram"><i id="resRamBar" style="width:0%"></i></div></div>
+<div class="res-card"><div class="rname">🟣 硬盘</div><div class="rval" id="resDisk">-</div><div class="rbar rbar-disk"><i id="resDiskBar" style="width:0%"></i></div></div>
+</div>
+</section>
+</div>
+
+<!-- ===== 服务器 ===== -->
+<div class="section" id="sec-server">
+<section class="card pixel-frame"><div class="card-title">⚔️ 服务器管理</div>
+<div style="display:flex;gap:5px;flex-wrap:wrap">
+<button class="wide-btn btn-green" style="flex:1;min-width:80px" id="srvStart">▶ 启动</button>
+<button class="wide-btn btn-red" style="flex:1;min-width:80px" id="srvStop">■ 停止</button>
+<button class="wide-btn btn-blue" style="flex:1;min-width:80px" id="srvRestart">↻ 重启</button>
+<button class="wide-btn btn-gold" style="flex:1;min-width:80px" id="srvForceStop">⛔ 强停</button>
+</div>
+</section>
+<section class="card pixel-frame" style="margin-top:10px"><div class="card-title">⌨️ 服务器控制台</div>
+<pre id="srvConsole" style="background:#0c1118;border:2px solid #53616d;border-radius:6px;padding:8px;font-family:Consolas,monospace;font-size:12px;color:#dff0ff;height:420px;overflow:auto;white-space:pre-wrap;margin:0 0 6px;resize:vertical"></pre>
+<div style="display:flex;gap:5px"><input type="text" id="srvCmdInput" placeholder="输入命令 (如: playing, save, help)" style="flex:1;height:30px;padding:0 8px;border:2px solid #53616d;border-radius:6px;background:#111820;color:#fff;font-size:12px;outline:none"/><button class="tool-btn" id="srvCmdSend">发送</button><button class="tool-btn" id="srvCmdClear">清屏</button></div>
+</section>
+</div>
+
+<!-- ===== 模式切换 ===== -->
+<div class="section" id="sec-mode">
+<section class="card pixel-frame page-card mode-page">
+<div class="page-head">
+  <div>
+    <div class="eyebrow">SERVER RUNTIME</div>
+    <h2>🔁 模式详情与运行环境切换</h2>
+    <p>纯净服与 TModLoader 使用独立目录、世界、模组与配置。这里仅调整前端展示结构，不改变原有 WebSocket 接口。</p>
+  </div>
+  <div class="mode-current-chip">当前：<span id="modeStatusInline">跟随服务端状态</span></div>
+</div>
+<div class="mode-select-grid">
+  <button class="mode-card mode-btn" data-mode="vanilla" type="button">
+    <span class="mode-glow"></span>
+    <div class="mode-card-top"><div class="mode-icon">🌳</div><span class="mode-badge">原版稳定</span></div>
+    <strong>纯净服</strong>
+    <p>运行原版 Terraria 服务端，适合不开模组、追求稳定和轻量维护的世界。</p>
+    <ul>
+      <li>世界目录与 tModLoader 分离</li>
+      <li>启动链路更短，排错更直接</li>
+      <li>适合常驻生存服和测试服</li>
+    </ul>
+  </button>
+  <button class="mode-card mode-btn active" data-mode="tmodloader" type="button">
+    <span class="mode-glow"></span>
+    <div class="mode-card-top"><div class="mode-icon">⚙️</div><span class="mode-badge purple">模组扩展</span></div>
+    <strong>TModLoader</strong>
+    <p>运行 tModLoader 服务端，支持 Mods、ModConfigs、独立世界和模组配置可视化编辑。</p>
+    <ul>
+      <li>HOME 固定到 /opt/erpanel-terraria</li>
+      <li>支持模组启停、删除与配置备份</li>
+      <li>适合整合包和长期玩法扩展</li>
+    </ul>
+  </button>
+</div>
+<div class="mode-flow">
+  <div><span>1</span>停止服务器</div>
+  <i></i>
+  <div><span>2</span>自动备份</div>
+  <i></i>
+  <div><span>3</span>切换运行环境</div>
+  <i></i>
+  <div><span>4</span>刷新状态</div>
+</div>
+<div class="hint-box mode-hint"><strong>切换说明</strong>：切换会先停止服务器并自动备份。两个模式的运行时、世界、模组和配置互不混用，避免纯净服与模组服配置交叉污染。</div>
+<div class="mode-actions">
+<button class="wide-btn btn-purple" id="modeSwitchCleanBtn">应用当前选择</button>
+<span id="modeStatus"></span>
+</div>
+</section>
+</div>
+
+<!-- ===== 版本更新 ===== -->
+<div class="section" id="sec-version">
+<section class="card pixel-frame"><div class="card-title">⬆️ 版本更新</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<div style="padding:12px;border:2px solid rgba(255,255,255,.1);border-radius:10px">
+<strong style="font-size:14px">🌳 纯净服</strong>
+<div class="ver-grid">
+<div class="ver-card"><span>当前</span><strong id="vVanillaCur">-</strong><span class="vtype" id="vVanillaType">-</span></div>
+<div>→</div>
+<div class="ver-card"><span>最新远程</span><strong id="vVanillaLatest">-</strong><span class="vtype">纯净服</span></div>
+</div>
+<button class="wide-btn btn-green" id="vVanillaUpdate">⬆ 更新纯净服</button>
+</div>
+<div style="padding:12px;border:2px solid rgba(255,255,255,.1);border-radius:10px">
+<strong style="font-size:14px">⚙️ TModLoader</strong>
+<div class="ver-grid">
+<div class="ver-card"><span>当前</span><strong id="vTmodCur">-</strong><span class="vtype" id="vTmodType">-</span></div>
+<div>→</div>
+<div class="ver-card"><span>最新远程</span><strong id="vTmodLatest">-</strong><span class="vtype">TModLoader</span></div>
+</div>
+<button class="wide-btn btn-green" id="vTmodUpdate">⬆ 更新 TModLoader</button>
+</div>
+</div>
+<!-- 下载源选择 -->
+<div class="card" style="margin-top:6px;display:flex;align-items:center;gap:12px;padding:8px 12px;font-size:12px">
+<span style="color:var(--muted)">🌐 下载源:</span>
+<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="dlSource" value="mirror" checked onchange="window.dlSource='mirror'"><span>🚀 国内镜像（推荐）</span></label>
+<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="dlSource" value="official" onchange="window.dlSource='official'"><span>🌍 海外官方（较慢）</span></label>
+</div>
+<div class="hint-box" style="margin-top:8px"><strong>更新说明</strong>：停止服务器 → 备份 → 下载 → 解压（支持3种方式）→ 安装完成。解压失败自动切换备用方式。</div>
+</section>
+</div>
+
+<!-- ===== 玩家 ===== -->
+<div class="section" id="sec-players">
+<section class="card pixel-frame"><div class="card-title">🧙 玩家管理</div>
+<div class="filter-bar"><input type="text" id="playerSearch" placeholder="搜索玩家..."/><button class="tool-btn" id="playerRefresh">🔄 刷新</button></div>
+<table class="data-table"><thead><tr><th>玩家名</th><th>角色</th><th>操作</th></tr></thead><tbody id="playerTableBody"><tr class="empty"><td colspan="3">暂无玩家</td></tr></tbody></table>
+<div style="display:flex;gap:5px;margin-top:8px"><input type="text" id="kickInput" placeholder="玩家名" style="height:26px;padding:0 6px;border:2px solid #53616d;border-radius:5px;background:#111820;color:#fff;font-size:12px;outline:none;flex:1"/><button class="tool-btn" id="kickBtn">踢出</button><input type="text" id="banInput" placeholder="玩家名" style="height:26px;padding:0 6px;border:2px solid #53616d;border-radius:5px;background:#111820;color:#fff;font-size:12px;outline:none;flex:1"/><button class="tool-btn" id="banBtn">封禁</button></div>
+</section>
+</div>
+
+<!-- ===== 模组 ===== -->
+<div class="section" id="sec-mods">
+<section class="card pixel-frame page-card mods-page">
+<div class="page-head compact-head">
+  <div>
+    <div class="eyebrow">TMODLOADER MODS</div>
+    <h2>⚙️ 模组管理与 ModConfigs 编辑</h2>
+    <p>优化后的配置编辑器采用更大的字号、更清晰的左右分栏和独立滚动区，保留原有模组接口与配置读写流程。</p>
+  </div>
+</div>
+<div id="modNotice" class="notice danger" style="display:none">⚠️ 纯净模式下该功能不可用</div>
+<div class="mod-toolbar">
+  <div class="seg-tabs">
+    <button class="tool-btn mod-tab active" data-tab="list">模组列表</button>
+    <button class="tool-btn mod-tab" data-tab="config">模组配置</button>
+  </div>
+  <button class="tool-btn refresh-btn" id="modRefresh">🔄 刷新</button>
+</div>
+<div id="modListPane" class="mod-list-pane">
+  <div class="filter-bar mod-filter"><input type="text" id="modSearch" placeholder="搜索模组..."/></div>
+  <div class="table-wrap"><table class="data-table"><thead><tr><th>模组</th><th>状态</th><th>来源</th><th>操作</th></tr></thead><tbody id="modTableBody"><tr class="empty"><td colspan="4">加载中...</td></tr></tbody></table></div>
+</div>
+<div id="modConfigPane" class="mod-config-pane" style="display:none">
+  <div class="config-layout">
+    <aside class="config-sidebar">
+      <div class="config-sidebar-head"><div><span>配置文件</span><small>ModConfigs JSON</small></div><button class="tool-btn" id="modConfigRefresh">刷新</button></div>
+      <div id="modConfigList" class="config-file-list"><span class="muted-empty">请选择配置文件</span></div>
+    </aside>
+    <section class="config-editor">
+      <div class="config-editor-head">
+        <div class="config-title-wrap"><span class="config-title-label">当前文件</span><span id="modConfigTitle">未选择配置</span></div>
+        <div class="config-actions">
+          <button class="tool-btn" id="modConfigValidate">校验</button>
+          <button class="tool-btn" id="modConfigFormat">格式化</button>
+          <button class="tool-btn" id="modConfigBackup">备份</button>
+          <select id="modConfigBackupSelect"></select>
+          <button class="tool-btn" id="modConfigRestore">恢复</button>
+          <button class="tool-btn primary" id="modConfigSave">保存</button>
+        </div>
+      </div>
+      <div class="config-panels">
+        <div class="config-panel visual-panel">
+          <div class="panel-head"><strong>可视化编辑</strong><span>适合常规数值、文本、布尔值修改</span></div>
+          <div id="modConfigForm" class="config-form"></div>
+        </div>
+        <div class="config-panel raw-panel">
+          <div class="panel-head"><strong>原始 JSON</strong><span>适合复杂数组或批量粘贴</span></div>
+          <textarea id="modConfigRaw" spellcheck="false"></textarea>
+        </div>
+      </div>
+      <div class="hint-box config-hint">保存后多数 ModConfigs 需要重启 tModLoader 后生效。建议修改前先点击“备份”。</div>
+    </section>
+  </div>
+</div>
+</section>
+</div>
+
+<!-- ===== 备份 ===== -->
+<div class="section" id="sec-backups">
+<section class="card pixel-frame"><div class="card-title">🧰 备份管理</div>
+<div style="display:flex;gap:6px;margin-bottom:8px">
+<button class="wide-btn btn-green" style="width:auto;padding:0 14px" id="backupCreate">📦 创建</button>
+<select id="backupModeFilter" style="height:32px;padding:0 6px;border:2px solid #53616d;border-radius:6px;background:#111820;color:#fff;outline:none"><option value="vanilla">纯净服</option><option value="tmodloader">TModLoader</option></select>
+<button class="tool-btn" id="backupRefresh">🔄</button>
+</div>
+<table class="data-table"><thead><tr><th>备份ID</th><th>时间</th><th>原因</th><th>操作</th></tr></thead><tbody id="backupTableBody"><tr class="empty"><td colspan="4">暂无备份</td></tr></tbody></table>
+</section>
+</div>
+
+<!-- ===== 日志 ===== -->
+<div class="section" id="sec-logs">
+<section class="card pixel-frame"><div class="card-title">📜 日志查看</div>
+<div class="filter-bar"><select id="logSelector" style="height:28px;padding:0 6px;border:2px solid #53616d;border-radius:5px;background:#111820;color:#fff;outline:none"><option value="panel">面板日志</option><option value="console">控制台日志</option><option value="error">错误日志</option></select><button class="tool-btn" id="logRefresh">🔄</button></div>
+<pre id="logDisplay" style="background:#0c1118;border:2px solid #53616d;border-radius:6px;padding:8px;font-family:Consolas,monospace;font-size:11px;color:#dff0ff;height:380px;overflow:auto;white-space:pre-wrap;margin:0"></pre>
+</section>
+</div>
+
+<!-- ===== 文件管理 ===== -->
+<div class="section" id="sec-files">
+<section class="card pixel-frame"><div class="card-title">📁 文件管理</div>
+<div class="filter-bar" style="flex-wrap:wrap"><select id="fileRootSelector" style="height:28px;padding:0 6px;border:2px solid #53616d;border-radius:5px;background:#111820;color:#fff;outline:none"></select><button class="tool-btn" id="fileUpBtn">⬆ 上层</button><button class="tool-btn" id="fileRefresh">🔄</button><button class="tool-btn" id="fileMkdirBtn">📂 新建目录</button><button class="tool-btn" id="fileUploadBtn">⬆ 上传</button><span id="filePath" style="color:var(--muted);font-size:11px;margin-left:6px"></span></div>
+<input type="file" id="fileUploadInput" style="display:none">
+<div id="fileUploadProgress" style="display:none;margin-bottom:6px;padding:6px;background:rgba(0,0,0,.2);border-radius:6px;font-size:11px">
+<div style="display:flex;justify-content:space-between"><span id="fileUploadStatus">准备上传...</span><span id="fileUploadPercent">0%</span></div>
+<div class="pbar" style="height:6px;margin-top:4px"><i id="fileUploadBarFill" style="width:0%"></i></div>
+</div>
+<div id="fileDropZone" style="border:2px dashed rgba(255,255,255,.18);border-radius:8px;padding:6px"><div style="font-size:11px;color:var(--muted);margin-bottom:5px">可将文件拖到这里上传，分片大小 50MB。</div><table class="data-table"><thead><tr><th style="width:40%">名称</th><th>类型</th><th>大小</th><th>修改时间</th><th>操作</th></tr></thead><tbody id="fileTableBody"><tr class="empty"><td colspan="5">选择目录浏览</td></tr></tbody></table></div>
+<div id="fileEditor" style="display:none;margin-top:8px">
+<strong style="font-size:12px">📝 文件编辑: <span id="fileEditName" style="color:var(--gold)"></span></strong>
+<textarea id="fileEditContent" style="width:100%;height:260px;background:#0c1118;color:#dff0ff;border:2px solid #53616d;border-radius:6px;padding:8px;font-family:Consolas,monospace;font-size:12px;margin-top:5px;resize:vertical;outline:none"></textarea>
+<div style="display:flex;gap:5px;margin-top:5px"><button class="tool-btn" id="fileSaveBtn">💾 保存</button><button class="tool-btn" id="fileEditClose">关闭</button></div>
+</div>
+</section>
+</div>
+
+<!-- ===== 设置 ===== -->
+<div class="section" id="sec-settings">
+<section class="card pixel-frame"><div class="card-title">🔧 面板设置</div>
+<div class="kv" style="margin-bottom:10px">
+<div class="kv-row"><span class="k">面板版本</span><span class="v">v1.0.0</span></div>
+<div class="kv-row"><span class="k">监听端口</span><span class="v">3001</span></div>
+<div class="kv-row"><span class="k">系统</span><span class="v" id="setPlatform">-</span></div>
+</div>
+<div style="border-top:1px solid var(--line);padding-top:10px">
+<strong>📢 服务器轮播公告</strong>
+<p style="font-size:10px;color:var(--muted);margin:4px 0 8px">设置后，服务器启动成功将每隔设定分钟自动广播一次公告。</p>
+<div class="kv">
+<div class="kv-row"><span class="k">公告内容</span><span><input id="cfgBroadcastText" placeholder="例: 欢迎来到服务器！请遵守规则。" style="height:28px;width:240px;padding:0 6px;border:2px solid #53616d;border-radius:5px;background:#111820;color:#fff;font-size:12px;outline:none"/></span></div>
+<div class="kv-row"><span class="k">间隔(分钟)</span><span><input id="cfgBroadcastInterval" type="number" min="1" max="999" value="10" style="height:28px;width:80px;padding:0 6px;border:2px solid #53616d;border-radius:5px;background:#111820;color:#fff;font-size:12px;outline:none"/><span style="color:var(--muted);font-size:11px;margin-left:6px">分钟</span></span></div>
+</div>
+<div style="display:flex;gap:6px;margin-top:8px"><button class="wide-btn btn-green" style="width:auto;padding:0 16px" id="cfgBroadcastSaveBtn">💾 保存公告设置</button></div>
+</div>
+<div style="border-top:1px solid var(--line);padding-top:10px;margin-top:10px">
+<strong>修改密码</strong>
+<div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">
+<input type="password" id="oldPass" placeholder="旧密码" style="height:28px;width:120px;padding:0 6px;border:2px solid #53616d;border-radius:5px;background:#111820;color:#fff;font-size:12px;outline:none"/>
+<input type="password" id="newPass" placeholder="新密码" style="height:28px;width:120px;padding:0 6px;border:2px solid #53616d;border-radius:5px;background:#111820;color:#fff;font-size:12px;outline:none"/>
+<button class="tool-btn" id="changePassBtn">修改密码</button>
+</div>
+</div>
+<div style="border-top:1px solid var(--line);padding-top:10px;margin-top:10px">
+<strong>作者信息</strong>
+<div style="font-size:12px;color:var(--muted);margin-top:6px">作者：<a href="https://github.com/chaojiermao" target="_blank" rel="noopener noreferrer" style="color:var(--gold);text-decoration:none">@ER猫</a></div>
+</div>
+</section>
+</div>
+</section>
+</main>
+<div class="toast" id="toast">操作已提交</div>
+
+<script>
+// WebSocket
+const WS={socket:null,token:localStorage.getItem('tp_token')||'',connected:false,authenticated:false,timer:null,pending:new Map(),mid:0,csSub:false,_reconnecting:false,_readyDone:false,_retryCount:0,
+url(){return(location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/ws'},
+connect(){if(this.socket&&this.socket.readyState===WebSocket.OPEN)return;try{this.socket=new WebSocket(this.url())}catch(e){showToast('连接失败',2);this.timer=setTimeout(()=>this.connect(),3000);return}
+this.socket.onopen=()=>{this.connected=true;this._reconnecting=false;if(this.token){this.send('auth.me',{},30000).then(r=>{if(r.success&&r.data&&r.data.user){this.authenticated=true;this._retryCount=0;hideLogin();updateUser(r.data.user);if(!this._readyDone){this._readyDone=true;onReady()}}else{this._retryCount++;if(this._retryCount<3){setTimeout(()=>this.connect(),2000)}else{this.token='';localStorage.removeItem('tp_token');this._readyDone=false;showLogin()}}}).catch(()=>{setTimeout(()=>this.connect(),2000)})}else checkInit()}
+this.socket.onmessage=e=>{try{this._h(JSON.parse(e.data))}catch(ex){}}
+this.socket.onclose=()=>{this.connected=false;this.authenticated=false;this._reconnecting=true;this.timer=setTimeout(()=>this.connect(),3000)}
+this.socket.onerror=()=>{this.socket?.close()}},
+send(type,payload={},timeout=120000){return new Promise(res=>{if(!this.socket||this.socket.readyState!==WebSocket.OPEN)return res({success:false,message:'未连接'});const id='m'+(++this.mid)+'_'+Date.now();this.socket.send(JSON.stringify({id,type,token:this.token,payload}));const t=setTimeout(()=>{this.pending.delete(id);res({success:false,message:'超时'})},timeout);this.pending.set(id,{resolve:res,t})})},
+_h(msg){if(msg.id&&this.pending.has(msg.id)){const c=this.pending.get(msg.id);clearTimeout(c.t);this.pending.delete(msg.id);c.resolve(msg);return}
+switch(msg.type){case'status.push':applyStatus(msg.data);break;case'version.push':if(msg.data){const v=msg.data.vanilla,t=msg.data.tmod;document.getElementById('vVanillaCur').textContent=v?.version||'-';document.getElementById('vVanillaType').textContent=v?.typeLabel||'';document.getElementById('vTmodCur').textContent=t?.version||'-';document.getElementById('vTmodType').textContent=t?.typeLabel||''}break;case'system.initRequired':showInitRequired(msg.data);break;case'player.push':if(msg.data){document.getElementById('dashPlayers').textContent=(msg.data.count||0);if(document.getElementById('sec-players').classList.contains('active'))loadPlayers()}break;case'task.progress':updateProgress(msg.data);break;case'version.update.result':if(msg.success){showToast('更新完成');setTimeout(()=>{location.reload()},1500)}break;case'console.chunk':appendConsoleChunk(msg.data);break;case'console.log':appendConsole(msg.data);break;case'console.history':msg.data?.lines?.forEach(l=>appendConsole({line:l}));break;case'console.cleared':document.getElementById('srvConsole').textContent=''}},
+disconnect(){clearTimeout(this.timer);if(this.socket){this.socket.close();this.socket=null}}}
+
+// Modal
+let modalResolve=null;
+function showConfirm(title,body){// 重置按钮状态（修复 showInitRequired 修改后未恢复的问题）
+document.getElementById('modalCancel').textContent='取消';document.getElementById('modalConfirm').textContent='确认执行';document.getElementById('modalConfirm').style.display='';
+return new Promise(res=>{modalResolve=res;document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=body;document.getElementById('confirmModal').classList.add('show')})}
+function showInitRequired(data){if(!data||!data.required)return;
+const curMode=data.mode||'vanilla';
+document.getElementById('modalTitle').textContent='🎮 首次初始化';
+document.getElementById('modalBody').innerHTML=`
+<p>当前还没有安装服务器核心！</p>
+<p class="warn">首次使用需要先拉取服务端文件。</p>
+<div style="margin:10px 0;padding:8px;background:rgba(0,0,0,.2);border-radius:6px;font-size:12px">
+<span style="color:var(--muted)">🌐 下载源:</span>
+<label style="margin:0 8px;cursor:pointer"><input type="radio" name="initSource" value="mirror" checked> 🚀 国内镜像</label>
+<label style="cursor:pointer"><input type="radio" name="initSource" value="official"> 🌍 海外官方</label>
+</div>
+<p>请选择要安装的模式：</p>
+<div style="display:flex;gap:8px;margin:12px 0">
+<button class="big-btn start" onclick="doInitUpdate('vanilla')" style="flex:1;padding:10px;font-size:13px;height:auto">
+📦 纯净服<br><span style="font-size:10px;font-weight:400">稳定、兼容原版</span>
+</button>
+<button class="big-btn start" onclick="doInitUpdate('tmodloader')" style="flex:1;padding:10px;font-size:13px;height:auto">
+🧩 TModLoader<br><span style="font-size:10px;font-weight:400">支持模组</span>
+</button>
+</div>`;
+document.getElementById('modalCancel').textContent='稍后处理';
+document.getElementById('modalConfirm').textContent='';
+document.getElementById('modalConfirm').style.display='none';
+document.getElementById('confirmModal').classList.add('show')}
+async function doInitUpdate(mode){const src=document.querySelector('input[name="initSource"]:checked')?.value||'mirror';document.getElementById('confirmModal').classList.remove('show');document.getElementById('modalCancel').textContent='取消';document.getElementById('modalConfirm').style.display='';document.getElementById('modalConfirm').textContent='确认执行';window.dlSource=src;await doUpdate(mode); // 下载完成后自动切换模式并刷新状态
+const sr=await WS.send('mode.switchClean',{mode});if(sr.success){updateModeUI(mode);showToast(`已切换到${mode==='tmodloader'?'TModLoader':'纯净服'}模式`)};location.reload()}
+document.getElementById('modalConfirm').addEventListener('click',()=>{document.getElementById('confirmModal').classList.remove('show');if(modalResolve)modalResolve(true)})
+document.getElementById('modalCancel').addEventListener('click',()=>{document.getElementById('confirmModal').classList.remove('show');document.getElementById('modalCancel').textContent='取消';document.getElementById('modalConfirm').style.display='';document.getElementById('modalConfirm').textContent='确认执行';if(modalResolve)modalResolve(false)})
+
+function showProgress(title,msg){document.getElementById('progressTitle').textContent=title;document.getElementById('progressBody').innerHTML=msg;document.getElementById('progressBarFill').style.width='0%';document.getElementById('progressModal').classList.add('show')}
+function hideProgress(){document.getElementById('progressModal').classList.remove('show')}
+function updateProgress(data){if(!data)return;const p=data.percent||0;document.getElementById('progressBarFill').style.width=p+'%';document.getElementById('progressBody').innerHTML=`<p>${data.message||'处理中...'}</p>`;if(p>=100)setTimeout(hideProgress,2500)}
+
+// UI
+function now(){return new Date().toLocaleTimeString('zh-CN',{hour12:false})}
+function esc(s){return s?String(s).replace(/[&<>"'\\]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','\\':'/'}[c])):''}
+function showToast(text){const t=document.getElementById('toast');t.textContent=text;t.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),2000)}
+function applyStatus(data){if(!data)return;window.currentMode=data.currentMode;const p=document.getElementById('statusPill'),s=document.getElementById('statusText'),r=data.serverStatus==='running';
+if(r){s.textContent='在线';p.classList.remove('offline')}else{s.textContent=data.serverStatus==='starting'?'启动中':data.serverStatus==='stopping'?'停止中':'离线';p.classList.add('offline')}
+document.getElementById('dashStatus').textContent=r?'🟢 运行中':data.serverStatus==='starting'?'🟡 启动中':data.serverStatus==='stopping'?'🟠 停止中':'🔴 已停止';
+document.getElementById('dashStatus').className='v '+(r?'green':'red');
+document.getElementById('dashMode').textContent=(data.currentMode==='tmodloader'?'TModLoader':'纯净服');
+document.getElementById('dashPid').textContent=data.serverPid||'-';
+document.getElementById('dashPlayers').textContent=(data.playerCount||0);
+['btnStart','srvStart'].forEach(id=>document.getElementById(id).disabled=r);
+['btnStop','srvStop'].forEach(id=>document.getElementById(id).disabled=!r);
+['btnRestart','srvRestart'].forEach(id=>document.getElementById(id).disabled=!r);
+document.getElementById('btnSave').disabled=!r;
+document.getElementById('srvModeDisplay').textContent=(data.currentMode==='tmodloader'?'TModLoader':'纯净服');
+document.getElementById('srvStatusBottom').textContent=r?'在线':data.serverStatus==='starting'?'启动中':'已停止';
+document.getElementById('modNotice').style.display=data.currentMode==='tmodloader'?'none':'block';}
+
+// Auth
+function showLogin(){document.getElementById('loginOverlay').classList.remove('hidden');document.getElementById('mainApp').style.display='none'}
+function hideLogin(){document.getElementById('loginOverlay').classList.add('hidden');document.getElementById('mainApp').style.display=''}
+function updateUser(u){document.getElementById('userName').textContent=u.username||'管理员';document.getElementById('userRole').textContent=u.role||'-'}
+async function checkInit(retryCount=0){document.getElementById('loginBtn').disabled=true;document.getElementById('loginSubtitle').textContent='正在检查...';
+const r=await WS.send('auth.init');document.getElementById('loginBtn').disabled=false;
+if(r.success&&r.data){document.getElementById('loginSubtitle').textContent=r.data.initialized?'请登录':'首次启动，创建管理员';document.getElementById('loginBtn').textContent=r.data.initialized?'登录':'创建管理员'}
+else if(retryCount<3){setTimeout(()=>checkInit(retryCount+1),1500)}
+else{document.getElementById('loginSubtitle').textContent='连接失败';document.getElementById('loginBtn').textContent='重试';document.getElementById('loginBtn').onclick=()=>checkInit(0)}}
+document.getElementById('loginBtn').addEventListener('click',async()=>{const u=document.getElementById('loginUser').value.trim(),p=document.getElementById('loginPass').value.trim();if(!u||!p){document.getElementById('loginError').textContent='请输入用户名和密码';document.getElementById('loginError').classList.add('show');return}
+document.getElementById('loginBtn').disabled=true;document.getElementById('loginError').classList.remove('show');document.getElementById('loginBtn').textContent='登录中...';
+const r=await WS.send('auth.login',{username:u,password:p});document.getElementById('loginBtn').disabled=false;document.getElementById('loginBtn').textContent='登录';
+if(r.success&&r.data){WS.token=r.data.token;WS.authenticated=true;localStorage.setItem('tp_token',r.data.token);updateUser(r.data.user);hideLogin();showToast('登录成功');onReady()}
+else{document.getElementById('loginError').textContent=r.message||'登录失败';document.getElementById('loginError').classList.add('show')}})
+document.getElementById('logoutBtn').addEventListener('click',()=>{WS.token='';WS.authenticated=false;WS._readyDone=false;localStorage.removeItem('tp_token');showToast('已登出');showLogin()})
+
+// Nav
+function scrollServerConsoleBottom(){const el=document.getElementById('srvConsole');if(el)requestAnimationFrame(()=>{el.scrollTop=el.scrollHeight})}
+function switchSection(name){document.querySelectorAll('#mainNav .nav-item').forEach(n=>n.classList.toggle('active',n.dataset.section===name));document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));const sec=document.getElementById('sec-'+name);if(sec)sec.classList.add('active');if(name==='server')scrollServerConsoleBottom();if(name==='players')loadPlayers();if(name==='mods'){if(window.currentMode!=='tmodloader')showToast('纯净模式下该功能不可用');loadMods()}if(name==='backups')loadBackups()}
+document.querySelectorAll('#mainNav .nav-item').forEach(item=>{item.addEventListener('click',function(e){e.preventDefault();switchSection(this.dataset.section)})})
+
+// Main
+async function onReady(){
+const sr=await WS.send('status.get');if(sr.success)applyStatus(sr.data);
+if(!WS.csSub){await WS.send('console.subscribe');WS.csSub=true}
+const mr=await WS.send('mode.get');if(mr.success)updateModeUI(mr.data.mode);
+const vr=await WS.send('version.get');if(vr.success){const v=vr.data.vanilla,t=vr.data.tmod;document.getElementById('vVanillaCur').textContent=v?.version||'-';document.getElementById('vVanillaType').textContent=v?.typeLabel||'';document.getElementById('vTmodCur').textContent=t?.version||'-';document.getElementById('vTmodType').textContent=t?.typeLabel||'';// 检查两种模式是否都未安装（首次使用）
+const bothMissing=!v?.installed&&!t?.installed;if(bothMissing)showInitRequired({required:true,mode:mr.success?mr.data.mode:'vanilla'})}
+const cr=await WS.send('config.get');if(cr.success&&cr.data){const p=cr.data.parsed||{};document.getElementById('dashPort').textContent=p.port||'7777'}
+document.getElementById('setPlatform').textContent=navigator.platform||'-';
+checkLatest();loadSystem();setInterval(loadSystem,5000);loadFileRoots();loadPlayers();// 加载公告设置
+const br=await WS.send('broadcast.get');if(br.success&&br.data){document.getElementById('cfgBroadcastText').value=br.data.text||'';document.getElementById('cfgBroadcastInterval').value=br.data.interval||'10'}}
+
+function updateModeUI(mode){window.currentMode=mode;document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));document.getElementById('srvModeDisplay').textContent=mode==='tmodloader'?'TModLoader':'纯净服';document.getElementById('modNotice').style.display=mode==='tmodloader'?'none':'block';const mi=document.getElementById('modeStatusInline');if(mi)mi.textContent=mode==='tmodloader'?'TModLoader':'纯净服'}
+
+async function checkLatest(){const r=await WS.send('version.check');if(r.success&&r.data){document.getElementById('vVanillaLatest').textContent=r.data.vanillaRemote?.version||'获取失败';document.getElementById('vTmodLatest').textContent=r.data.tmodRemote?.version||'获取失败'}}
+
+async function loadSystem(){const r=await WS.send('system.status');if(r.success&&r.data){const d=r.data;document.getElementById('resCpu').textContent=(d.cpu?.usage??0)+'%';document.getElementById('resCpuBar').style.width=(d.cpu?.usage??0)+'%';document.getElementById('resRam').textContent=(d.memory?.used??0)+'G / '+(d.memory?.total??0)+'G';document.getElementById('resRamBar').style.width=(d.memory?.percent??0)+'%';if(d.disk?.total){document.getElementById('resDisk').textContent=(d.disk?.used??0)+'G / '+(d.disk?.total??0)+'G';document.getElementById('resDiskBar').style.width=(d.disk?.percent??0)+'%'}else{document.getElementById('resDisk').textContent='N/A';document.getElementById('resDiskBar').style.width='0%'}}}
+
+// Server actions
+const srvMap={'btnStart':'server.start','srvStart':'server.start','btnStop':'server.stop','srvStop':'server.stop','btnRestart':'server.restart','srvRestart':'server.restart','srvForceStop':'server.forceStop','btnSave':'server.save'};
+Object.entries(srvMap).forEach(([id,type])=>{document.getElementById(id)?.addEventListener('click',async()=>{if(type==='server.forceStop'){if(!await showConfirm('⚠️ 强制停止','<p class="warn">此操作将立即终止服务器进程，可能导致数据丢失！</p><p>请先执行保存操作。</p>'))return}if(type==='server.restart'){if(!await showConfirm('🔄 确认重启','<p>将保存世界 → 退出 → 重新启动。</p>'))return}if(type==='server.stop'){if(!await showConfirm('⏹ 确认停止','<p>服务器将安全停止。</p>'))return}
+// 如果是启动，带上当前设置页的参数
+let payload=null;if(type==='server.start'){payload={port:document.getElementById('dashPort').textContent||'7777'}}const r=await WS.send(type,payload);if(type==='server.start'&&r.success)switchSection('server');if(type==='server.start')scrollServerConsoleBottom();showToast(r.success?{'server.start':'已启动','server.stop':'已停止','server.restart':'重启中','server.save':'已保存','server.forceStop':'已强停'}[type]||'成功':r.message||'失败')})});
+
+// Mode
+document.querySelectorAll('.mode-btn').forEach(b=>b.addEventListener('click',function(){document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'));this.classList.add('active')}));
+async function doModeSwitch(){const mode=document.querySelector('.mode-btn.active')?.dataset?.mode||'vanilla';const label=mode==='tmodloader'?'TModLoader':'纯净服';if(!await showConfirm('🔄 切换模式',`<p><strong>切换到 ${label} 模式</strong></p><p class="warn">⚠️ 将停止服务器 → 备份 → 清理旧配置 → 创建新配置 → 切换模式</p>`))return;showProgress('🔄 模式切换','切换中，请稍候...');document.getElementById('modeStatus').textContent='切换中...';const r=await WS.send('mode.switchClean',{mode});hideProgress();document.getElementById('modeStatus').textContent=r.success?`已切换到 ${label}`:r.message||'失败';if(r.success)updateModeUI(mode);}
+document.getElementById('modeSwitchCleanBtn')?.addEventListener('click',doModeSwitch);
+
+// Version update with progress modal
+window.dlSource='mirror';
+async function doUpdate(mode){const label=mode==='tmodloader'?'TModLoader':'纯净服';const srcLabel=window.dlSource==='mirror'?'国内镜像':'海外官方';if(!await showConfirm('⬆️ 确认更新',`<p><strong>更新 ${label} 服务端</strong></p><p>下载源: ${srcLabel}</p><p>流程：停止 → 备份 → 下载 → 解压安装</p><p class="warn">⚠️ 更新期间请勿关闭页面！</p>`))return;showProgress('⬆️ 版本更新',`开始更新 ${label} 服务端...`);
+const btn=mode==='tmodloader'?document.getElementById('vTmodUpdate'):document.getElementById('vVanillaUpdate');btn.disabled=true;btn.textContent='更新中...';
+const r=await WS.send('version.update',{mode,source:window.dlSource||'mirror'},600000);btn.disabled=false;btn.textContent='⬆ 更新';
+if(r.success){showProgress('✅ 更新完成',`<p><strong>${label} 服务端更新完成！</strong></p><p>版本: ${r.data?.version||'最新'}</p><p>请前往服务器页面启动。</p>`);setTimeout(hideProgress,4000);showToast('更新完成');
+const vr=await WS.send('version.get');if(vr.success){document.getElementById('vVanillaCur').textContent=vr.data.vanilla?.version||'-';document.getElementById('vVanillaType').textContent=vr.data.vanilla?.typeLabel||'';document.getElementById('vTmodCur').textContent=vr.data.tmod?.version||'-';document.getElementById('vTmodType').textContent=vr.data.tmod?.typeLabel||''}}
+else{hideProgress();showToast(r.message||'更新失败')}}
+document.getElementById('vVanillaUpdate')?.addEventListener('click',()=>doUpdate('vanilla'));
+document.getElementById('vTmodUpdate')?.addEventListener('click',()=>doUpdate('tmodloader'));
+
+// Broadcast config save
+document.getElementById('cfgBroadcastSaveBtn')?.addEventListener('click',async()=>{const text=document.getElementById('cfgBroadcastText').value.trim();const interval=document.getElementById('cfgBroadcastInterval').value.trim();if(!text){showToast('请输入公告内容');return}if(!interval||parseInt(interval)<1){showToast('请输入有效的间隔分钟数');return}const r=await WS.send('broadcast.save',{text,interval:parseInt(interval)});showToast(r.success?'公告设置已保存':r.message||'保存失败')});
+
+// Console helpers for server page
+function appendConsole(data){if(!data||!data.line)return;const el=document.getElementById('srvConsole');if(!el)return;el.textContent+=data.line+'\n';el.scrollTop=el.scrollHeight}
+function appendConsoleChunk(data){if(!data||!data.text)return;const el=document.getElementById('srvConsole');if(!el)return;el.textContent+=data.text;el.scrollTop=el.scrollHeight}
+function sendSrvCommand(){const input=document.getElementById('srvCmdInput'),cmd=input.value;WS.send('server.command',{command:cmd});input.value=''}
+document.getElementById('srvCmdInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendSrvCommand()}});
+document.getElementById('srvCmdSend')?.addEventListener('click',sendSrvCommand);
+document.getElementById('srvCmdClear')?.addEventListener('click',()=>{document.getElementById('srvConsole').textContent='';WS.send('console.clear')});
+
+// File management
+let fileCurrentPath='';
+document.getElementById('fileRefresh')?.addEventListener('click',()=>fileBrowse(fileCurrentPath));
+document.getElementById('fileMkdirBtn')?.addEventListener('click',async()=>{const n=prompt('输入新目录名称:');if(!n)return;const r=await WS.send('file.mkdir',{path:fileCurrentPath,dirName:n});showToast(r.success?'已创建':r.message);if(r.success)fileBrowse(fileCurrentPath)});
+document.getElementById('fileSaveBtn')?.addEventListener('click',async()=>{const p=document.getElementById('fileEditName').dataset.path,c=document.getElementById('fileEditContent').value;if(!p)return;const r=await WS.send('file.write',{path:p,content:c});showToast(r.success?'已保存':r.message);if(r.success)fileBrowse(fileCurrentPath)});
+document.getElementById('fileEditClose')?.addEventListener('click',()=>document.getElementById('fileEditor').style.display='none');
+document.getElementById('fileRootSelector')?.addEventListener('change',async function(){const path=this.value;if(path){fileCurrentPath=path;document.getElementById('filePath').textContent=path;fileBrowse(path)}});
+document.getElementById('fileUpBtn')?.addEventListener('click',()=>{if(window._fileParentPath)fileBrowse(window._fileParentPath)});
+
+async function loadFileRoots(){const r=await WS.send('file.roots');const sel=document.getElementById('fileRootSelector');if(!r.success||!r.data?.length){sel.innerHTML='<option>暂无可用目录</option>';return}sel.innerHTML=r.data.map(d=>`<option value="${esc(d.path)}">${esc(d.name)}</option>`).join('');sel.dispatchEvent(new Event('change'))}
+async function fileBrowse(dirPath){if(!dirPath)return;fileCurrentPath=dirPath;document.getElementById('filePath').textContent=dirPath;const tbody=document.getElementById('fileTableBody');tbody.innerHTML='<tr class="empty"><td colspan="5">加载中...</td></tr>';const r=await WS.send('file.list',{path:dirPath});if(!r.success){tbody.innerHTML='<tr class="empty"><td colspan="5">加载失败: '+esc(r.message)+'</td></tr>';return}
+window._fileParentPath=r.data?.parentPath||null;document.getElementById('fileUpBtn').disabled=!window._fileParentPath;
+const items=r.data?.items||[];if(!items.length){tbody.innerHTML='<tr class="empty"><td colspan="5">📭 当前目录为空</td></tr>';window._fileItems=[];return}
+tbody.innerHTML=items.map((item,i)=>{
+const isDir=item.type==='directory';const sizeStr=isDir?'-':item.size!=null?(item.size/1024).toFixed(1)+'KB':'-';
+const dateStr=item.modifiedAt?new Date(item.modifiedAt).toLocaleString():'-';
+let actions='';
+if(isDir)actions+=`<button class="tool-btn f-act" data-act="browse" data-idx="${i}">📂 进入</button>`;
+else actions+=`<button class="tool-btn f-act" data-act="edit" data-idx="${i}">📝 编辑</button><button class="tool-btn f-act" data-act="rename" data-idx="${i}">✏️ 重命名</button>`;
+actions+=`<button class="tool-btn f-act" data-act="compress" data-idx="${i}">📦 压缩</button>`;
+if(!isDir&&item.name.toLowerCase().endsWith('.zip'))actions+=`<button class="tool-btn f-act" data-act="extract" data-idx="${i}">📤 解压</button>`;
+actions+=`<button class="tool-btn f-act" data-act="delete" data-idx="${i}">🗑</button>`;
+return`<tr><td>${isDir?'📁':'📄'} ${esc(item.name)}</td><td>${isDir?'目录':'文件'}</td><td>${sizeStr}</td><td>${dateStr}</td><td style="display:flex;gap:3px">${actions}</td></tr>`}).join('');window._fileItems=items}
+// 事件委托处理文件操作
+document.getElementById('fileTableBody')?.addEventListener('click',async function(e){const btn=e.target.closest('.f-act');if(!btn)return;const items=window._fileItems||[];const idx=parseInt(btn.dataset.idx);const item=items[idx];if(!item)return;
+if(btn.dataset.act==='browse'){fileBrowse(item.path)}else
+if(btn.dataset.act==='edit'){const r=await WS.send('file.read',{path:item.path});if(!r.success){showToast(r.message);return}document.getElementById('fileEditor').style.display='block';document.getElementById('fileEditName').textContent=r.data.name;document.getElementById('fileEditName').dataset.path=r.data.path;document.getElementById('fileEditContent').value=r.data.content||''}else
+if(btn.dataset.act==='rename'){const n=prompt('新名称:',item.name);if(!n||n===item.name)return;const r=await WS.send('file.rename',{path:item.path,newName:n});showToast(r.success?'已重命名':r.message);if(r.success)fileBrowse(fileCurrentPath)}else
+if(btn.dataset.act==='compress'){const r=await WS.send('file.compress',{path:item.path});showToast(r.success?'已压缩':r.message||'压缩失败');if(r.success)fileBrowse(fileCurrentPath)}else
+if(btn.dataset.act==='extract'){const r=await WS.send('file.extract',{path:item.path,destDir:fileCurrentPath});showToast(r.success?'已解压':r.message||'解压失败');if(r.success)fileBrowse(fileCurrentPath)}else
+if(btn.dataset.act==='delete'){if(!await showConfirm('🗑 删除','<p>确定删除 <strong>'+esc(item.name)+'</strong>？不可撤销。</p>'))return;const r=await WS.send('file.remove',{path:item.path});showToast(r.success?'已删除':r.message);if(r.success)fileBrowse(fileCurrentPath)}})
+
+// 文件上传（50MB 分片，支持拖拽）
+async function uploadFileToCurrentDir(file){if(!file||!fileCurrentPath)return;const CHUNK=50*1024*1024;const total=Math.ceil(file.size/CHUNK)||1;const bar=document.getElementById('fileUploadBarFill');const st=document.getElementById('fileUploadStatus');const pc=document.getElementById('fileUploadPercent');const pg=document.getElementById('fileUploadProgress');pg.style.display='block';bar.style.width='0%';st.textContent='初始化...';pc.textContent='0%';
+const init=await WS.send('file.upload.start',{fileName:file.name,fileSize:file.size,totalChunks:total,destDir:fileCurrentPath});if(!init.success){showToast(init.message);pg.style.display='none';return}
+const uid=init.data.uploadId;
+for(let i=0;i<total;i++){const s=i*CHUNK,e=Math.min(s+CHUNK,file.size);const c=file.slice(s,e);const d=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(',')[1]);fr.readAsDataURL(c)});
+const cr=await WS.send('file.upload.chunk',{uploadId:uid,index:i,data:d});if(!cr.success){showToast('上传失败: '+cr.message);pg.style.display='none';return}
+const p=Math.round((i+1)/total*100);bar.style.width=p+'%';st.textContent='上传中 '+(i+1)+'/'+total;pc.textContent=p+'%'}
+const fn=await WS.send('file.upload.finish',{uploadId:uid});pg.style.display='none';if(fn.success){showToast('上传完成: '+file.name);fileBrowse(fileCurrentPath)}else showToast(fn.message||'上传失败')}
+document.getElementById('fileUploadBtn')?.addEventListener('click',()=>document.getElementById('fileUploadInput').click());
+document.getElementById('fileUploadInput')?.addEventListener('change',async function(){const file=this.files[0];this.value='';await uploadFileToCurrentDir(file)});
+const dz=document.getElementById('fileDropZone');dz?.addEventListener('dragover',e=>{e.preventDefault();dz.style.borderColor='var(--gold)'});dz?.addEventListener('dragleave',()=>dz.style.borderColor='rgba(255,255,255,.18)');dz?.addEventListener('drop',async e=>{e.preventDefault();dz.style.borderColor='rgba(255,255,255,.18)';const files=[...(e.dataTransfer?.files||[])];for(const f of files)await uploadFileToCurrentDir(f)})
+
+// Config editor in server page (removed - replaced by console)
+
+
+// Backups
+document.getElementById('backupCreate')?.addEventListener('click',async()=>{const m=document.getElementById('backupModeFilter').value;const r=await WS.send('backup.create',{reason:'manual',mode:m});showToast(r.success?'已创建':r.message||'失败');loadBackups()});
+document.getElementById('backupRefresh')?.addEventListener('click',loadBackups);
+async function loadBackups(){const m=document.getElementById('backupModeFilter').value;const r=await WS.send('backup.list',{mode:m});const t=document.getElementById('backupTableBody');if(!r.success||!r.data?.backups?.length){t.innerHTML='<tr class="empty"><td colspan="4">暂无备份</td></tr>';return}t.innerHTML=r.data.backups.map(b=>`<tr><td>${esc(b.id)}</td><td>${b.createdAt?new Date(b.createdAt).toLocaleString():'-'}</td><td>${esc(b.reason||'-')}</td><td><button class="tool-btn" onclick="restoreBackup('${esc(b.id)}')">恢复</button><button class="tool-btn" onclick="deleteBackup('${esc(b.id)}')">删除</button></td></tr>`).join('')}
+window.restoreBackup=async(id)=>{if(!await showConfirm('⚠️ 恢复备份',`<p><strong>${esc(id)}</strong></p><p>将先备份当前状态。</p>`))return;const m=document.getElementById('backupModeFilter').value;const r=await WS.send('backup.restore',{backupId:id,mode:m});showToast(r.success?'已恢复':r.message||'失败');loadBackups()}
+window.deleteBackup=async(id)=>{if(!await showConfirm('🗑 删除备份','<p>确定删除？操作不可撤销。</p>'))return;const m=document.getElementById('backupModeFilter').value;const r=await WS.send('backup.delete',{backupId:id,mode:m});showToast(r.success?'已删除':r.message||'失败');loadBackups()}
+
+// Players
+document.getElementById('playerRefresh')?.addEventListener('click',loadPlayers);
+async function loadPlayers(){const r=await WS.send('player.list');const t=document.getElementById('playerTableBody');if(!r.success){t.innerHTML='<tr class="empty"><td colspan="3">加载失败: '+esc(r.message)+'</td></tr>';return}
+if(r.data?.players?.length){t.innerHTML=r.data.players.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.onlineSeconds!=null?Math.floor(p.onlineSeconds/60)+'分':'在线'}</td><td><button class="tool-btn p-kick" data-name="${esc(p.name)}">踢出</button></td></tr>`).join('')}else t.innerHTML='<tr class="empty"><td colspan="3">📭 暂无在线玩家'+(r.data?.stale?'（检测中...）':'')+'</td></tr>'}
+// 事件委托处理玩家踢出
+document.getElementById('playerTableBody').addEventListener('click',function(e){const btn=e.target.closest('.p-kick');if(!btn)return;const n=btn.dataset.name;if(!n)return;showConfirm('👢 踢出','<p>踢出玩家 <strong>'+esc(n)+'</strong>？</p>').then(async(ok)=>{if(!ok)return;const r=await WS.send('player.kick',{playerName:n});showToast(r.success?'已踢出':r.message||'失败');loadPlayers()})})
+window.kickPlayer=async(n)=>{if(!await showConfirm('👢 踢出','<p>踢出玩家 <strong>'+esc(n)+'</strong>？</p>'))return;const r=await WS.send('player.kick',{playerName:n});showToast(r.success?'已踢出':r.message||'失败');loadPlayers()}
+document.getElementById('kickBtn')?.addEventListener('click',async()=>{const n=document.getElementById('kickInput').value.trim();if(!n)return;await WS.send('player.kick',{playerName:n});showToast('已发送');document.getElementById('kickInput').value='';loadPlayers()})
+document.getElementById('banBtn')?.addEventListener('click',async()=>{const n=document.getElementById('banInput').value.trim();if(!n)return;if(!await showConfirm('🚫 封禁','<p>封禁玩家 <strong>'+esc(n)+'</strong>？</p>'))return;await WS.send('player.ban',{playerName:n});showToast('已封禁');document.getElementById('banInput').value=''})
+
+// Mods
+document.getElementById('modRefresh')?.addEventListener('click',loadMods);
+let modConfigCurrent=null,modConfigJson=null;
+document.querySelectorAll('.mod-tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.mod-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const tab=btn.dataset.tab;document.getElementById('modListPane').style.display=tab==='list'?'block':'none';document.getElementById('modConfigPane').style.display=tab==='config'?'block':'none';if(tab==='config')loadModConfigs()}));
+async function loadMods(){const r=await WS.send('mod.list');const t=document.getElementById('modTableBody');if(!r.success){document.getElementById('modNotice').style.display='block';t.innerHTML='<tr class="empty"><td colspan="4">纯净模式下该功能不可用</td></tr>';return}document.getElementById('modNotice').style.display='none';if(!r.data?.mods?.length){t.innerHTML='<tr class="empty"><td colspan="4">暂无模组</td></tr>';return}t.innerHTML=r.data.mods.map(m=>`<tr><td><strong>${esc(m.name)}</strong></td><td><span class="badge ${m.enabled?'badge-green':'badge-red'}">${m.enabled?'启用':'禁用'}</span></td><td>${m.source==='workshop'?'Workshop':'本地'}</td><td><button class="tool-btn" onclick="toggleMod('${esc(m.name)}',${!m.enabled})">${m.enabled?'禁用':'启用'}</button><button class="tool-btn" onclick="deleteMod('${esc(m.name)}')">删除</button></td></tr>`).join('')}
+async function loadModConfigs(){const box=document.getElementById('modConfigList');box.innerHTML='<span class="muted-empty">加载配置文件...</span>';const r=await WS.send('modconfig.list');if(!r.success){document.getElementById('modNotice').style.display='block';box.innerHTML='<span class="muted-empty">'+esc(r.message||'纯净模式下该功能不可用')+'</span>';return}document.getElementById('modNotice').style.display='none';if(!r.data.items.length){box.innerHTML='<span class="muted-empty">ModConfigs 目录暂无 JSON</span>';return}box.innerHTML=r.data.items.map(it=>`<button class="config-file-btn" data-file="${esc(it.fileName)}"><strong>${esc(it.fileName)}</strong><small><span>${esc(it.scope||'Config')}</span><span class="${it.validJson?'json-ok':'json-bad'}">${it.validJson?'JSON 正常':'JSON 错误'}</span></small></button>`).join('')}
+document.getElementById('modConfigList')?.addEventListener('click',e=>{const btn=e.target.closest('.config-file-btn');if(!btn)return;readModConfig(btn.dataset.file)});
+window.readModConfig=async(fileName)=>{const r=await WS.send('modconfig.read',{fileName});if(!r.success){showToast(r.message||'读取失败');return}modConfigCurrent=r.data.fileName;modConfigJson=r.data.json;document.getElementById('modConfigTitle').textContent=r.data.fileName;document.getElementById('modConfigRaw').value=r.data.raw;document.querySelectorAll('.config-file-btn').forEach(b=>b.classList.toggle('active',b.dataset.file===r.data.fileName));renderModConfigForm(modConfigJson);renderModConfigBackups(r.data.backups||[])};
+function renderModConfigBackups(items){const sel=document.getElementById('modConfigBackupSelect');sel.innerHTML=items.length?items.map(b=>`<option value="${esc(b.backupFile)}">${esc(b.backupFile)}</option>`).join(''):'<option value="">无备份</option>'}
+function renderModConfigForm(json){const root=document.getElementById('modConfigForm');root.innerHTML='';if(json===null||json===undefined){root.innerHTML='<div class="empty-config">当前配置为空</div>';return}root.appendChild(buildConfigFields(json,[],'root'))}
+function pathTitle(path,key){return key==='root'?'Root':String(key)}
+function pathHint(path){return path.length?path.join('.'):'配置根节点'}
+function isPlainObject(v){return v&&typeof v==='object'&&!Array.isArray(v)}
+function buildConfigFields(value,path,key){const wrap=document.createElement('div');wrap.className='config-group';if(isPlainObject(value)){const keys=Object.keys(value);if(!keys.length){wrap.innerHTML='<div class="empty-config">空对象</div>';return wrap}keys.forEach(k=>{const v=value[k],p=path.concat(k);if(isPlainObject(v)){const details=document.createElement('details');details.className='config-object';details.open=path.length<1;const summary=document.createElement('summary');summary.textContent=k;details.appendChild(summary);const body=document.createElement('div');body.className='config-object-body';body.appendChild(buildConfigFields(v,p,k));details.appendChild(body);wrap.appendChild(details)}else if(Array.isArray(v)){wrap.appendChild(buildArrayField(v,p,k))}else{wrap.appendChild(buildPrimitiveField(k,v,p))}})}else if(Array.isArray(value)){wrap.appendChild(buildArrayField(value,path,key||'array'))}else{wrap.appendChild(buildPrimitiveField(key||'value',value,path))}return wrap}
+function buildArrayField(arr,path,key){const details=document.createElement('details');details.className='config-array';details.open=arr.length<=6;const summary=document.createElement('summary');summary.textContent=`${key}  [${arr.length}]`;details.appendChild(summary);const body=document.createElement('div');body.className='config-array-body';if(!arr.length){body.innerHTML='<div class="empty-config">空数组</div>'}else if(arr.every(x=>!x||typeof x!=='object')){arr.forEach((v,i)=>body.appendChild(buildPrimitiveField(`[${i}]`,v,path.concat(i))))}else{arr.forEach((v,i)=>{const d=document.createElement('details');d.className='config-object';d.open=false;const s=document.createElement('summary');s.textContent=`${key}[${i}]`;d.appendChild(s);const b=document.createElement('div');b.className='config-object-body';b.appendChild(buildConfigFields(v,path.concat(i),i));d.appendChild(b);body.appendChild(d)})}details.appendChild(body);return details}
+function buildPrimitiveField(key,value,path){const row=document.createElement('div');row.className='config-row';const label=document.createElement('div');label.className='config-label';label.innerHTML=`<strong>${esc(key)}</strong><span>${esc(pathHint(path))}</span>`;row.appendChild(label);const field=document.createElement('div');if(typeof value==='boolean'){field.className='config-bool';const input=document.createElement('input');input.type='checkbox';input.checked=!!value;input.addEventListener('change',()=>{setByPath(modConfigJson,path,input.checked);syncModConfigRaw()});const txt=document.createElement('span');txt.textContent=value?'true':'false';input.addEventListener('change',()=>txt.textContent=input.checked?'true':'false');field.appendChild(input);field.appendChild(txt)}else{const input=document.createElement('input');input.className='config-input';input.type=typeof value==='number'?'number':'text';if(input.type==='number')input.step='any';input.value=value===null?'':String(value);input.placeholder=value===null?'null':'';input.addEventListener('change',()=>{let next;if(value===null&&input.value==='')next=null;else if(input.type==='number')next=Number.isFinite(input.valueAsNumber)?input.valueAsNumber:Number(input.value||0);else next=input.value;setByPath(modConfigJson,path,next);syncModConfigRaw()});field.appendChild(input)}row.appendChild(field);return row}
+function setByPath(obj,path,val){if(!path.length){modConfigJson=val;return}let cur=obj;for(let i=0;i<path.length-1;i++)cur=cur[path[i]];cur[path[path.length-1]]=val}
+function syncModConfigRaw(){document.getElementById('modConfigRaw').value=JSON.stringify(modConfigJson,null,2)}
+document.getElementById('modConfigRaw')?.addEventListener('change',()=>{try{modConfigJson=JSON.parse(document.getElementById('modConfigRaw').value);renderModConfigForm(modConfigJson)}catch(e){showToast('JSON 格式错误: '+e.message)}});
+document.getElementById('modConfigRefresh')?.addEventListener('click',loadModConfigs);
+document.getElementById('modConfigValidate')?.addEventListener('click',async()=>{if(!modConfigCurrent)return showToast('请选择配置文件');const r=await WS.send('modconfig.validate',{fileName:modConfigCurrent,raw:document.getElementById('modConfigRaw').value});showToast(r.success?'JSON 格式正确':r.message||'JSON 格式错误')});
+document.getElementById('modConfigFormat')?.addEventListener('click',async()=>{if(!modConfigCurrent)return showToast('请选择配置文件');const r=await WS.send('modconfig.format',{fileName:modConfigCurrent,raw:document.getElementById('modConfigRaw').value});if(r.success){document.getElementById('modConfigRaw').value=r.data.raw;modConfigJson=JSON.parse(r.data.raw);renderModConfigForm(modConfigJson)}showToast(r.success?'已格式化':r.message||'格式化失败')});
+document.getElementById('modConfigSave')?.addEventListener('click',async()=>{if(!modConfigCurrent)return showToast('请选择配置文件');const r=await WS.send('modconfig.save',{fileName:modConfigCurrent,raw:document.getElementById('modConfigRaw').value});showToast(r.success?'配置已保存，重启 tModLoader 后生效':r.message||'保存失败');if(r.success)readModConfig(modConfigCurrent)});
+document.getElementById('modConfigBackup')?.addEventListener('click',async()=>{if(!modConfigCurrent)return showToast('请选择配置文件');const r=await WS.send('modconfig.backup',{fileName:modConfigCurrent});showToast(r.success?'已备份':r.message||'备份失败');if(r.success)readModConfig(modConfigCurrent)});
+document.getElementById('modConfigRestore')?.addEventListener('click',async()=>{if(!modConfigCurrent)return showToast('请选择配置文件');const backupFile=document.getElementById('modConfigBackupSelect').value;if(!backupFile)return showToast('暂无可恢复备份');if(!await showConfirm('恢复配置','<p>确认恢复该备份？当前配置会先自动备份。</p>'))return;const r=await WS.send('modconfig.restore',{fileName:modConfigCurrent,backupFile});showToast(r.success?'已恢复，重启后生效':r.message||'恢复失败');if(r.success)readModConfig(modConfigCurrent)});
+window.toggleMod=async(n,e)=>{const r=await WS.send(e?'mod.enable':'mod.disable',{modName:n});showToast(r.success?(e?'已启用':'已禁用'):r.message||'失败');loadMods()}
+window.deleteMod=async(n)=>{if(!await showConfirm('🗑 删除模组','<p>删除 <strong>'+esc(n)+'</strong>？</p>'))return;const r=await WS.send('mod.delete',{modName:n});showToast(r.success?'已删除':r.message||'失败');loadMods()}
+
+// Logs
+document.getElementById('logRefresh')?.addEventListener('click',async()=>{const l=document.getElementById('logSelector').value;const r=await WS.send('log.read',{logId:l,lines:200});document.getElementById('logDisplay').textContent=r.success&&r.data?r.data.lines.join('\n')||'(空)':r.message||'加载失败'})
+
+// Password
+document.getElementById('changePassBtn')?.addEventListener('click',async()=>{const o=document.getElementById('oldPass').value,n=document.getElementById('newPass').value;if(!o||!n){showToast('请填写密码');return}const r=await WS.send('auth.changePassword',{oldPassword:o,newPassword:n});showToast(r.success?'已修改':r.message||'失败')});
+
+showLogin();checkInit();WS.connect();
+</script>
+</body>
+</html>
