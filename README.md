@@ -5,6 +5,7 @@
 一款基于 Web 的泰拉瑞亚服务器管理面板，支持 **纯净版 (Vanilla)** 和 **TModLoader** 双模式切换，提供可视化的服务器管理体验。
 
 ---
+![Uploading image.png…]()
 
 ## 功能特性
 
