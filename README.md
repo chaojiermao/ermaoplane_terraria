@@ -135,3 +135,4 @@ erpanel-terraria/
 - [Terraria](https://terraria.org) — Re-Logic
 - [TModLoader](https://github.com/tModLoader/tModLoader) — TML Team
 - [@ER猫](https://github.com/chaojiermao) — 开发维护
+  如需授权定制或者其他事宜敬请联系QQ3959281466
